@@ -1,5 +1,7 @@
 using ImageProjectiveGeometry
 using Base.Test
 
-# write your own tests here
-@test 1 == 1
+include("test_transforms.jl")
+#include("test_projective.jl")
+#include("test_ransac.jl")
+#include("test_cornerfeatures.jl")
