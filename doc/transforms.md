@@ -12,7 +12,6 @@ Transforms Function Reference
 * [invht](#invht) - Inverse of a homogeneous transformation matrix.
 * [inveuler](#inveuler) - Inverse of Euler transform.
 * [invrpy](#invrpy) - Inverse of Roll Pitch Yaw transform.
-
 * [angleaxis](#angleaxis) - Constructs angle-axis descriptor.
 * [normaliseangleaxis](#normaliseangleaxis) - Normalises angle-axis descriptor.
 * [angleaxisrotate](#angleaxisrotate) - Uses angle axis descriptor to rotate 
@@ -21,7 +20,6 @@ vectors.
 * [matrix2angleandaxis](#matrix2angleandaxis) - Decompose homogeneous matrix 
 to angle and axis.
 * [matrix2angleaxis](#matrix2angleaxis) - Homogeneous matrix to angle-axis description.
-
 * [quaternion](#quaternion) - Construct quaternion.
 * [quaternionconjugate](#quaternionconjugate) - Conjugate of a quaternion.
 * [quaternionproduct](#quaternionproduct) - Computes product of two quaternions.

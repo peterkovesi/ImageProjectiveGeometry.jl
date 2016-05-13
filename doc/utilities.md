@@ -14,10 +14,10 @@ Utilities Function Reference
 * [imerode](#imerode) - Image morpholgical erosion.
 * [circularstruct](#circularstruct) - Generate circular structuring element for morphological operations.
 * [floatyx](#floatyx) - Convert 2D AbstractImage to 2D float array with y x spatial order.
-
 * [histtruncate](#histtruncate) - Truncates ends of an image histogram.
 * [normalise/normalize](#normalisenormalize) - Normalises image values to 0-1, or to desired mean and variance.
 * [matchbycorrelation](#matchbycorrelation) - Match image feature points by correlation.
+
 _________________
 
 

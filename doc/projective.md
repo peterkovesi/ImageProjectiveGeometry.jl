@@ -70,7 +70,9 @@ Constructors:
                     # all other parameters are set to 0.
 ```
 
-## cameraproject - Projects 3D points into camera image.
+## cameraproject 
+
+Projects 3D points into camera image.
 
 ```
 Usage 1:  xy = cameraproject(P, pt)
