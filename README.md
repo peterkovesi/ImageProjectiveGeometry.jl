@@ -9,7 +9,9 @@ ImageProjectiveGeometry
 ```
 > Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl.git")
 ```
-Warning: Very limited testing of these functions has been carried out so far.
+
+Warning: While my demo tests seem to run OK a full test suite for
+these functionis yet to be completed.
 
 ## Summary
 

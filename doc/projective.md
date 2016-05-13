@@ -424,7 +424,9 @@ Arguments:  P1, P2 - Two 3x4 camera projection matrices or
 
 Returns:    F      - Fundamental matrix relating the two camera views.
 ``
+
 See also: fundmatrix(), affinefundmatrix(), Camera()
+
 
 ## idealimagepts - Ideal image points with no distortion.
 
