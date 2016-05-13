@@ -30,7 +30,9 @@ to angle and axis.
 
 ____
 
-## trans - Homogeneous transformation for a translation by x, y, z
+## trans 
+
+Homogeneous transformation for a translation by x, y, z
 
 ```
 Usage: T = trans(x, y, z)
@@ -41,7 +43,9 @@ Arguments:  x,y,z - translations in x,y and z, or alternatively
 Returns:    T     - 4x4 homogeneous transformation matrix.
 ```
 
-## rotx - Homogeneous transformation for a rotation about the x axis
+## rotx 
+
+Homogeneous transformation for a rotation about the x axis
 
 ```
 Usage: T = rotx(theta)
@@ -50,7 +54,9 @@ Argument:  theta  - rotation about x axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
 
-## roty - Homogeneous transformation for a rotation about the y axis
+## roty 
+
+Homogeneous transformation for a rotation about the y axis
 
 ```
 Usage: T = roty(theta)
@@ -59,7 +65,10 @@ Argument:  theta  - rotation about y axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
 
-## rotz - Homogeneous transformation for a rotation about the z axis
+## rotz 
+
+Homogeneous transformation for a rotation about the z axis
+
 ```
 Usage: T = rotz(theta)
 
@@ -67,7 +76,9 @@ Argument:  theta  - rotation about z axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
 
-## dhtrans - Computes Denavit Hartenberg matrix.
+## dhtrans 
+
+Computes Denavit Hartenberg matrix.
 
 This function calculates the 4x4 homogeneous transformation matrix,
 representing the Denavit Hartenberg matrix of a robot arm link, given
@@ -84,7 +95,9 @@ Arguments:  theta - joint angle (rotation about local z)
 Returns:        T - 4x4 Homogeneous transformation matrix.
 ```
 
-## homotrans - Homogeneous transformation of points/lines.
+## homotrans 
+
+Homogeneous transformation of points/lines.
 
 Function to perform a transformation on 2D or 3D homogeneous coordinates
 The resulting coordinates are normalised to have a homogeneous scale of 1
@@ -98,7 +111,9 @@ Arguments:
 Returns   t  - Transformed homogeneous coordinates
 ```
 
-## invht - Inverse of a homogeneous transformation matrix
+## invht 
+
+Inverse of a homogeneous transformation matrix
 
 ```
 Usage:  Tinv = invht(T)
@@ -107,7 +122,9 @@ Argument:   T    - 4x4 homogeneous transformation matrix
 Returns:    Tinv - inverse
 ```
 
-## invrpy - Inverse of Roll Pitch Yaw transform.
+## invrpy 
+
+Inverse of Roll Pitch Yaw transform.
 
 ```
 Usage:  (rpy1, rpy2) = invrpy(RPY)
@@ -121,7 +138,10 @@ Returns:  rpy1 = [phi1, theta1, psi1] - the 1st solution and
  rotz(rpy1[1]) * roty(rpy1[2]) * rotx(rpy1[3]) = RPY
 ```
 
-## inveuler - Inverse of Euler transform.
+## inveuler 
+
+Inverse of Euler transform.
+
 ```
 Usage:  (euler1, euler2) = inveuler(T)
 
@@ -135,7 +155,9 @@ Returns: euler1 = [phi1, theta1, psi1] - the 1st solution and,
 ```
 
 
-## angleaxis - Constructs angle-axis descriptor.
+## angleaxis 
+
+Constructs angle-axis descriptor.
 
 ```
 Usage: t = angleaxis(theta, axis)
@@ -146,7 +168,9 @@ Returns:   t     - 3-vector giving rotation axis with magnitude equal to the
                    rotation angle in radians.
 ```
 
-## normaliseangleaxis - Normalises angle-axis descriptor.
+## normaliseangleaxis 
+
+Normalises angle-axis descriptor.
 
 Function normalises theta so that it lies in the range -pi to pi to ensure
 one-to-one mapping between angle-axis descriptor and resulting rotation.
@@ -159,7 +183,9 @@ Argument:   t  - 3-vector giving rotation axis with magnitude equal to the
 Returns:    t2 - Normalised angle-axis descriptor
 ```
 
-## angleaxisrotate - Uses angle axis descriptor to rotate vectors
+## angleaxisrotate 
+
+Uses angle axis descriptor to rotate vectors
 
 ```
 Usage: v2 = angleaxisrotate(t, v)
@@ -171,7 +197,9 @@ Arguments:  t  - 3-vector defining rotation axis and having magnitude
 Returns:    v2 - The rotated vectors. 
 ```
 
-## angleaxis2matrix - Converts angle-axis descriptor to 4x4 homogeneous transformation matrix
+## angleaxis2matrix 
+
+Converts angle-axis descriptor to 4x4 homogeneous transformation matrix
 
 ```
 Usage:     T = angleaxis2matrix(t)
@@ -181,7 +209,9 @@ Argument:  t - 3x1 vector or array specifying the rotation axis and having
 Returns:   T - 4x4 Homogeneous transformation matrix.
 ```
 
-## matrix2angleandaxis - Decompose homogeneous matrix to angle and axis.
+## matrix2angleandaxis 
+
+Decompose homogeneous matrix to angle and axis.
 
 ```
 Usage: (ang, axis) = matrix2angleandaxis(T)
@@ -195,7 +225,9 @@ Note that only the top left 3x3 rotation component of T is used, any
 translation component in T is ignored.
 
 
-## matrix2angleaxis - Homogeneous matrix to angle-axis description.
+## matrix2angleaxis 
+
+Homogeneous matrix to angle-axis description.
 
 ```
 Usage: t = matrix2angleaxis(T)
@@ -209,7 +241,9 @@ Note that only the top left 3x3 rotation component of T is used, any
 translation component in T is ignored.
 
 
-## quaternion  - Construct quaternion.
+## quaternion  
+
+Construct quaternion.
 
 ```
 Usage:  Q = quaternion(theta, axis)
@@ -219,7 +253,9 @@ Arguments: theta - angle of rotation
 Returns:   Q     - a 4-vector quaternion in the form [w, xi, yj, zk]
 ```
 
-## quaternionconjugate - Conjugate of a quaternion.
+## quaternionconjugate 
+
+Conjugate of a quaternion.
 
 ```
 Usage: Qconj = quaternionconjugate(Q)
@@ -228,7 +264,9 @@ Argument: Q     - Quaternions in the form  Q = [Qw, Qi, Qj, Qk].
 Returns:  Qconj - Conjugate.
 ```
 
-## quaternionproduct - Computes product of two quaternions.
+## quaternionproduct 
+
+Computes product of two quaternions.
 
 ```
 Usage: Q = quaternionproduct(A, B)
@@ -238,7 +276,9 @@ Arguments: A, B - Quaternions assumed to be 4-vectors in the
 Returns:   Q    - Quaternion product.
 ```
 
-## quaternionrotate - Rotates a 3D vector by a quaternion.
+## quaternionrotate 
+
+Rotates a 3D vector by a quaternion.
 
 ```
 Usage:   vnew = quaternionrotate(Q, v)
@@ -249,7 +289,9 @@ Arguments: Q - a quaternion in the form [w, xi, yj, zk]
 Returns:   vnew - rotated vector.
 ```
 
-## quaternion2matrix - Quaternion to a 4x4 homogeneous transformation matrix.
+## quaternion2matrix 
+
+Quaternion to a 4x4 homogeneous transformation matrix.
 
 ```
 Usage:  T = quaternion2matrix(Q)
@@ -258,7 +300,9 @@ Argument: Q - a quaternion in the form [w, xi, yj, zk].
 Returns:  T - 4x4 Homogeneous rotation matrix.
 ``` 
 
-## matrix2quaternion - Homogeneous matrix to quaternion.
+## matrix2quaternion 
+
+Homogeneous matrix to quaternion.
 
 Converts 4x4 homogeneous rotation matrix to quaternion
 
@@ -269,7 +313,9 @@ Argument:   T - 4x4 Homogeneous transformation matrix
 Returns:    Q - 4-vector quaternion in the form [w, xi, yj, zk]
 ```
 
-## vector2quaternion - Embeds 3-vector in a quaternion representation.
+## vector2quaternion 
+
+Embeds 3-vector in a quaternion representation.
 
 ```
 Usage: Q = vector2quaternion(v)

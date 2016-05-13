@@ -14,12 +14,12 @@ RANSAC Function Reference
 * [fitline3d](#fitline3d) - Fits a line to a set of 3D points.
 * [fitplane](#fitplane) - Solves coefficients of plane fitted to 3 or more points.
 
-
-
 _______________________
 
 
-## ransac - Robustly fits a model to data with the RANSAC algorithm.
+## ransac 
+
+Robustly fits a model to data with the RANSAC algorithm.
 
 ```
 Usage:
@@ -109,7 +109,9 @@ References:
    Computer Vision". pp 101-113. Cambridge University Press, 2001
 
 
-## ransacfithomography - Fits 2D homography using RANSAC.
+## ransacfithomography 
+
+Fits 2D homography using RANSAC.
 
 ```
 Usage:   (H, inliers) = ransacfithomography(x1, x2, t)
@@ -139,7 +141,9 @@ Returns:
 See Also: ransac(), homography2d(), homography1d()
 
 
-## ransacfitfundmatrix - Fits fundamental matrix using RANSAC.
+## ransacfitfundmatrix 
+
+Fits fundamental matrix using RANSAC.
 
 ```
 Usage:   (F, inliers) = ransacfitfundmatrix(x1, x2, t)
@@ -169,7 +173,9 @@ Returns:
 See also: ransac(), fundmatrix()
 
 
-## ransacfitaffinefundmatrix - Fits affine fundamental matrix using RANSAC.
+## ransacfitaffinefundmatrix 
+
+Fits affine fundamental matrix using RANSAC.
 
 ```
 Usage:   (F, inliers) = ransacfitaffinefundmatrix(x1, x2, t)
@@ -199,7 +205,9 @@ Returns:
 See also: ransac(), fundmatrix(), affinefundmatrix()
 
 
-## ransacfitplane - Fits plane to 3D array of points using RANSAC.
+## ransacfitplane 
+
+Fits plane to 3D array of points using RANSAC.
 
 ```
 Usage  (B, P, inliers) = ransacfitplane(XYZ, t, feedback)
@@ -231,7 +239,9 @@ Returns:
 See also:  ransac(), fitplane()
 
 
-## ransacfitline - Fits line to 3D array of points using RANSAC.
+## ransacfitline 
+
+Fits line to 3D array of points using RANSAC.
 
 ```
 Usage  (L, inliers) = ransacfitline(XYZ, t, feedback)
@@ -266,7 +276,9 @@ Returns:.
 See also:  ransac(), fitline3d(), ransacfitplane()
 
 
-## iscolinear - Are 3 points colinear.
+## iscolinear 
+
+Are 3 points colinear.
 
 ```
 Usage:  r = iscolinear(p1, p2, p3, flag)
@@ -283,7 +295,9 @@ Returns:
        r  -  true if points are co-linear, false otherwise
 ```
 
-## fitline2d - Least squares fit of a line to a set of 2D points.
+## fitline2d 
+
+Least squares fit of a line to a set of 2D points.
 
 ```
 Usage:   (C, dist) = fitline2d(XY)
@@ -329,7 +343,9 @@ use
 Note, however, that this assumes c[2] is not zero
 
 
-## fitline3d - Fits a line to a set of 3D points.
+## fitline3d 
+
+Fits a line to a set of 3D points.
 
 ```
 Usage:   L = fitline3d(XYZ)
@@ -346,7 +362,9 @@ Returns: L - 3x2 matrix consisting of the two endpoints of the line
              eigenvalues.
 ```
 
-## fitplane - Solves coefficients of plane fitted to 3 or more points.
+## fitplane 
+
+Solves coefficients of plane fitted to 3 or more points.
 
 ```
 Usage:   B = fitplane(XYZ)

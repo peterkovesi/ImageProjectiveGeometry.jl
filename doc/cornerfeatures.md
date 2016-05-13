@@ -14,7 +14,9 @@ Corner Features Function Reference
 ___________
 
 
-## shi_tomasi - Shi - Tomasi corner detector
+## shi_tomasi 
+
+Shi - Tomasi corner detector
 
 ```
 Usage:               cimg = shi_tomasi(img, sigma=1)
@@ -66,7 +68,9 @@ See also: harris(), noble(), hessianfeatures(), structuretensor(),
 nonmaxsuppts(), derivative5()
 
 
-## harris - Harris corner detector.
+## harris 
+
+Harris corner detector.
 
 ```
 Usage:                cimg = harris(img, sigma=1; k=0.04)
@@ -126,7 +130,9 @@ really want.
 See also: noble(), shi_tomasi(), hessianfeatures(), nonmaxsuppts(), derivative5()
 
 
-## noble - Noble's variant of the Harris corner detector.
+## noble 
+
+Noble's variant of the Harris corner detector.
 
 ```
 Usage:                cimg = noble(img, sigma=1)
@@ -177,7 +183,9 @@ See also: harris(), shi_tomasi(), hessianfeatures(), nonmaxsuppts(),
 structuretensor(), derivative5()
 
 
-## coherence - Compute image coherence from structure tensor
+## coherence 
+
+Compute image coherence from structure tensor
 
 ```
 Usage:      cimg = coherence(img, sigma=1)
@@ -207,7 +215,9 @@ and hence the local structure has a strong 2D component.
 See also: structuretensor()
 
 
-## structuretensor - Compute structure tensor values over an image
+## structuretensor 
+
+Compute structure tensor values over an image
 
 ```
 Usage:  (Ix2, Iy2, Ixy) = structuretensor(img, sigma=1)
@@ -225,7 +235,9 @@ Returns:
 See also: shi_tomasi(), harris(), noble(), coherence(), derivative5()
 
 
-## hessianfeatures  - Computes determiant of hessian features in an image.
+## hessianfeatures 
+
+Computes determiant of hessian features in an image.
 
 ```
 Usage: hdet = hessianfeatures(img, sigma)
@@ -260,7 +272,9 @@ property spatialorder set to ["y","x"].
 See also: harris(), noble(), shi_tomasi(), derivative5(), nonmaxsuppts()
 
 
-## fastradial - Loy and Zelinski's fast radial feature detector.
+## fastradial 
+
+Loy and Zelinski's fast radial feature detector.
 
 ```
 Usage: (S, So) = fastradial(img, radii, alpha, beta)

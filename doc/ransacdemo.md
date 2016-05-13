@@ -10,7 +10,9 @@ Ransacdemo Function Reference
 
 ____________________________________________
 
-## fitlinedemo - Demonstrates RANSAC line fitting.
+## fitlinedemo 
+
+Demonstrates RANSAC line fitting.
 
 Function generates a noisy set of data points with outliers and uses
 RANSAC to fit a line.
@@ -35,7 +37,9 @@ Try using:  fitlinedemo(0.3, 0.05, 0.05)
 See also: ransacfitplane(), fitplane()
 
 
-## fitplanedemo - Demonstrates RANSAC plane fitting.
+## fitplanedemo 
+
+Demonstrates RANSAC plane fitting.
 
 Function generates a noisy set of data points with outliers and uses
 RANSAC to fit a plane.
@@ -60,7 +64,9 @@ Try using:  fitplanedemo(0.3, 0.02, 0.05)
 See also: ransacfitplane(), fitplane()
 
 
-## fitfunddemo - Example of fundamental matrix computation.
+## fitfunddemo 
+
+Example of fundamental matrix computation.
 
 Demonstration of feature matching via simple correlation, and then using
 RANSAC to estimate the fundamental matrix and at the same time identify
@@ -76,7 +82,9 @@ Edit code as necessary to tweak parameters
 See also: ransacfitfundmatrix(), fundmatrix()
 
 
-## fithomogdemo - Example of finding a homography.
+## fithomogdemo 
+
+Example of finding a homography.
 
 Demonstration of feature matching via simple correlation, and then using
 RANSAC to estimate the homography between two images and at the same time

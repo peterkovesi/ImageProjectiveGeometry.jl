@@ -29,7 +29,9 @@ Projective Function Reference
 _________________
 
 
-## <a name="Camera"></a> Camera - Structure defining parameters of a camera.
+## Camera 
+
+Structure defining parameters of a camera.
 
 ```
       fx::Real      # Focal length.
@@ -104,7 +106,9 @@ Returns:
 See also: Camera(), camstruct2projmatrix()
 
 
-## imagept2plane - Project image points to a plane and return their 3D locations
+## imagept2plane 
+
+Project image points to a plane and return their 3D locations
 
 ```
 Usage:  pt = image2plane(C, xy, planeP, planeN)
@@ -131,7 +135,9 @@ the forward distortion and then subtracting the distortion.
 See also Camera(), cameraproject()
 
 
-## camera2projmatrix - Generate a camera projection matrix from a Camera structure.
+## camera2projmatrix 
+
+Generate a camera projection matrix from a Camera structure.
 
 ```
 Usage:     P = camera2projmatrix(C)
@@ -148,7 +154,9 @@ ignoring lens distortion parameters etc.
 See also: Camera(), projmatrix2camera(), cameraproject()
 
 
-## decomposecamera -  Decomposition of a camera projection matrix.
+## decomposecamera 
+
+Decomposition of a camera projection matrix.
 
 ```
 Usage:  K, Rc_w, Pc, pp, pv = decomposecamera(P)
@@ -181,7 +189,9 @@ Returns:
 See also: rq3()
 
 
-## rq3 - RQ decomposition of 3x3 matrix.
+## rq3 
+
+RQ decomposition of 3x3 matrix.
 
 ```
 Usage:  R, Q = rq3(A)
@@ -198,7 +208,9 @@ elements of R are +ve.
 See also: decomposecamera()
 
 
-## makehomogeneous - Appends a scale of 1 to an array inhomogeneous coordinates.
+## makehomogeneous 
+
+Appends a scale of 1 to an array inhomogeneous coordinates.
 
 ```
 Usage:  hx = makehomogeneous(x)
@@ -214,7 +226,9 @@ Returns:
 See also: makeinhomogeneous(), hnormalise()
 
 
-## makeinhomogeneous - Converts homogeneous coords to inhomogeneous coordinates.
+## makeinhomogeneous 
+
+Converts homogeneous coords to inhomogeneous coordinates.
 
 ```
 Usage:  x = makehomogeneous(hx)
@@ -232,7 +246,9 @@ of these points are simply returned minus their scale coordinate.
 See also: makehomogeneous(), hnormalise()
 
 
-## hnormalise - Normalises array of homogeneous coordinates to a scale of 1.
+## hnormalise 
+
+Normalises array of homogeneous coordinates to a scale of 1.
 
 ```
 Usage:  nx = hnormalise(x)
@@ -249,7 +265,9 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 0) are left unchanged.
 
 
-## homography1d - Computes 1D homography.
+## homography1d 
+
+Computes 1D homography.
 
 ```
 Usage:   H = homography1d(x1, x2)
@@ -261,7 +279,9 @@ Returns:
           H - the 2x2 homography such that x2 = H*x1
 ```
 
-## homography2d - Computes 2D homography.
+## homography2d 
+
+Computes 2D homography.
 
 ```
 Usage 1:   H = homography2d(x1, x2)
@@ -283,7 +303,9 @@ Returns:
 Usage 2 is intended for use with ransac()
 
 
-## normalise1dpts - Normalises 1D homogeneous points.
+## normalise1dpts 
+
+Normalises 1D homogeneous points.
 
 Function translates and normalises a set of 1D homogeneous points 
 so that their centroid is at the origin and their mean distance from 
@@ -307,7 +329,9 @@ returned as newpts and T is the identity matrix.
 See also: normalise2dpts()
 
 
-## normalise2dpts - Normalises 2D homogeneous points.
+## normalise2dpts 
+
+Normalises 2D homogeneous points.
 
 ```
 Usage:   (newpts, T) = normalise2dpts(pts)
@@ -332,7 +356,9 @@ If there are some points at infinity the normalisation transform
 is calculated using just the finite points.  Being a scaling and
 translating transform this will not affect the points at infinity.
 
-## skew - Constructs 3x3 skew-symmetric matrix from 3-vector.
+## skew 
+
+Constructs 3x3 skew-symmetric matrix from 3-vector.
 
 ```
 Usage:  s = skew(v)
@@ -357,7 +383,9 @@ Arguments:  a, b  - 3x1 arrays or vectors
 Returns:       c  - 3-vector
 ```
 
-## fundmatrix - Computes fundamental matrix from 8 or more points.
+## fundmatrix 
+
+Computes fundamental matrix from 8 or more points.
 
 Function computes the fundamental matrix from 8 or more matching points in
 a stereo pair of images.  The normalised 8 point algorithm given by
@@ -386,7 +414,9 @@ with ransac()
 See also: affinefundmatrix()
 
 
-## affinefundmatrix - Computes affine fundamental matrix from 4 or more points.
+## affinefundmatrix 
+
+Computes affine fundamental matrix from 4 or more points.
 
 Function computes the affine fundamental matrix from 4 or more matching
 points in a stereo pair of images.  
@@ -415,7 +445,9 @@ Ed.) is used.
 See also: fundmatrix()
 
 
-## fundfromcameras - Fundamental matrix from camera matrices or structures.
+## fundfromcameras 
+
+Fundamental matrix from camera matrices or structures.
 
 ```
 Usage: F = fundfromcameras(P1, P2)
@@ -430,7 +462,9 @@ Returns:    F      - Fundamental matrix relating the two camera views.
 See also: fundmatrix(), affinefundmatrix(), Camera()
 
 
-## idealimagepts - Ideal image points with no distortion.
+## idealimagepts 
+
+Ideal image points with no distortion.
 
 ```
 Usage:  xyideal = idealimagepts(C, xy)
@@ -449,7 +483,9 @@ Returns:
 See also Camera(), cameraproject()
 
 
-## solvestereopt - Homogeneous linear solution of a stereo point.
+## solvestereopt 
+
+Homogeneous linear solution of a stereo point.
 
 ```
 Usage:  (pt, xy_reproj) = solvestereopt(xy, P)
@@ -472,7 +508,9 @@ Returns:      pt - 3D location in space returned in normalised
 See also: idealimagepts(), camstruct2projmatrix(), Camera()
 
 
-## hline - Plot a 2D line defined in homogeneous coordinates.
+## hline 
+
+Plot a 2D line defined in homogeneous coordinates.
 
 Function for ploting 2D homogeneous lines defined by 2 points
 or a line defined by a single homogeneous vector
