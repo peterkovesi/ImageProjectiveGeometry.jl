@@ -298,7 +298,9 @@ Returns:
 See also: imerode(), circularstruct()
 
 
-imerode - 2D morphological erosion with rectangular or octagonal structing element
+## imerode
+
+2D morphological erosion with rectangular or octagonal structing element
 
 ```
 Usage: eimg = imerode(img, seType, seSize)
@@ -345,6 +347,7 @@ Returns:
 ```
 
 See also: imdilate(), circularstruct()
+
 
 ## circularstruct 
 
@@ -442,6 +445,7 @@ Arguments:  img     - A grey-level input image.
 ```
 Offsets and rescales image so that nimg has mean reqmean and variance
 reqvar.  
+
 
 ## matchbycorrelation 
 
