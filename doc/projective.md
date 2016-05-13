@@ -3,7 +3,7 @@ Projective Function Reference
 
 ## Index
 
-* [Camera](#Camera) - Structure defining parameters of a camera.
+* [Camera](#camera) - Structure defining parameters of a camera.
 * [cameraproject](#cameraproject) - Projects 3D points into camera image.
 * [imagept2plane](#imagept2plane) - Project image points to a plane and return their 3D locations.
 * [camera2projmatrix](#camera2projmatrix) - Generate a camera projection matrix from a Camera structure.

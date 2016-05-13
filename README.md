@@ -77,3 +77,9 @@ though feature matching probably belongs in its own package(s)
 * [utilities](doc/utilities.md)
 * [ransacdemo](doc/ransacdemo.md)
 
+
+## Supplementary Material
+
+[The Fundamental Matrix Song](http://danielwedge.com/fmatrix/) by Daniel Wedge
+[The RANSAC Song](http://danielwedge.com/ransac/) by Daniel Wedge
+
