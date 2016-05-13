@@ -1,7 +1,6 @@
 ImageProjectiveGeometry
 =======================
 
-
 ![banner image](doc/banner.png)
 
 ## Installation
@@ -28,31 +27,33 @@ given that Julia and its packages are still subject to some change, I
 have chosen to keep all these components in this package to minimise
 external dependencies and make it as self contained as possible.
 
-The components are:
+## Function Reference
 
-1. **projective.jl:** Defines a camera structure, implements image
-projection functions, functions for computing homographies and
-fundamental matrices, stereo solution, etc.
+* [**projective**](doc/projective.md) Defines a camera structure,
+implements image projection functions, functions for computing
+homographies and fundamental matrices, stereo solution, etc.
 
-2. **cornerfeatures.jl:** Implementations of a number of corner
-detectors.  Ultimately could be contributed to the Images package.
+* [**cornerfeatures**](doc/cornerfeatures.md) Implementations of a number
+of corner detectors.  Ultimately could be contributed to the Images
+package.
 
-3. **ransac.jl:** A generic implementation of RANSAC along with a
-collection of specific functions that use RANAC for robust estimation
-of homographies and fundamental matrices, and for fitting lines and
-planes etc.
+* [**ransac**](doc/ransac.md) A generic implementation of RANSAC along
+with a collection of specific functions that use RANAC for robust
+estimation of homographies and fundamental matrices, and for fitting
+lines and planes etc.
 
-4. **transforms.jl:** Functions for constructing, applying, and decomposing
-homogeneous transforms, angle-axis descriptors, and quaternions.
+* [**transforms**](doc/transforms.md) Functions for constructing,
+applying, and decomposing homogeneous transforms, angle-axis
+descriptors, and quaternions.
 
-5. **utilities.jl:** Miscellaneous image processing functions
+* [**utilities**](doc/utilities.md) Miscellaneous image processing functions
 including nonmaximal suppression, image derivative computation and
 efficient morphological dilation and erosion using rectangular and
 octagonal structuring elements.  There is also a basic correlation
 matcher.  Ultimately could be contributed to the Images package.
 
-6. **ransacdemo.jl:** Functions demonstrating the use of ransac() to
-fit lines, planes, fundamental matrices and homographies.
+* [**ransacdemo**](doc/ransacdemo.md) Functions demonstrating the use of
+ransac() to fit lines, planes, fundamental matrices and homographies.
 
 Also, within src, there are demo scripts for the different corner
 detectors and the morphological functions.
@@ -69,15 +70,6 @@ though feature matching probably belongs in its own package(s)
  [http://www.peterkovesi.com/matlabfns](http://www.peterkovesi.com/matlabfns/index.html)
  Accordingly some of the code is still MATLABesque in nature.  Pull
  requests to make it more Julian are welcome.
-
-## Function Reference
-
-* [projective](doc/projective.md)
-* [cornerfeatures](doc/cornerfeatures.md)
-* [ransac](doc/ransac.md)
-* [transforms](doc/transforms.md)
-* [utilities](doc/utilities.md)
-* [ransacdemo](doc/ransacdemo.md)
 
 
 ## Supplementary Material
