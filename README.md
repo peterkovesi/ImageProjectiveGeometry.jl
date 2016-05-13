@@ -11,7 +11,7 @@ ImageProjectiveGeometry
 ```
 
 Warning: While my demo tests seem to run OK a full test suite for
-these functionis yet to be completed.
+these functions is yet to be completed.
 
 ## Summary
 
@@ -71,14 +71,9 @@ though feature matching probably belongs in its own package(s)
 ## Function Reference
 
 * [projective](doc/projective.md)
-
 * [cornerfeatures](doc/cornerfeatures.md)
-
 * [ransac](doc/ransac.md)
-
 * [transforms](doc/transforms.md)
-
 * [utilities](doc/utilities.md)
-
 * [ransacdemo](doc/ransacdemo.md)
 

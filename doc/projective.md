@@ -3,7 +3,7 @@ Projective Function Reference
 
 ## Index
 
-* [Camera](#Camera) - Structure defining parameters of a camera.
+* [Camera](projective.md#Camera) - Structure defining parameters of a camera.
 * [cameraproject](#cameraproject) - Projects 3D points into camera image.
 * [imagept2plane](#imagept2plane) - Project image points to a plane and return their 3D locations.
 * [camera2projmatrix](#camera2projmatrix) - Generate a camera projection matrix from a Camera structure.
@@ -12,7 +12,7 @@ Projective Function Reference
 * [makehomogeneous](#makehomogeneous) - Appends a scale of 1 to an array inhomogeneous coordinates.
 * [makeinhomogeneous](#makeinhomogeneous) - Converts homogeneous coords to inhomogeneous coordinates.
 * [hnormalise](#hnormalise) - Normalises array of homogeneous coordinates to a scale of 1.
-* [homography1d](#homography1d) - Computes 1D homography.
+* [homography1d](projective.md#homography1d) - Computes 1D homography.
 * [homography2d](#homography2d) - Computes 2D homography.
 * [normalise1dpts](#normalise1dpts) - Normalises 1D homogeneous points.
 * [normalise2dpts](#normalise2dpts) - Normalises 2D homogeneous points.
@@ -423,7 +423,7 @@ Arguments:  P1, P2 - Two 3x4 camera projection matrices or
             C1, C2 - Two Camera structres
 
 Returns:    F      - Fundamental matrix relating the two camera views.
-``
+```
 
 See also: fundmatrix(), affinefundmatrix(), Camera()
 
