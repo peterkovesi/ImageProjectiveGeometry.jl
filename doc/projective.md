@@ -24,7 +24,7 @@ Projective Function Reference
 * [idealimagepts](#idealimagepts) - Ideal image points with no distortion.
 * [solvestereopt](#solvestereopt) - Homogeneous linear solution of a stereo point.
 * [hline](#hline) - Plot a 2D line defined in homogeneous coordinates.
-
+* [plotcamera](#plotcamera) - Plots graphical representation of camera(s) showing pose.
 
 _________________
 
@@ -530,3 +530,29 @@ limits.  This will require you to set the desired limits with a call
 to PyPlot.axis() prior to calling this function.
 
 Side effect: PyPlot hold() state will be set to true
+
+## plotcamera 
+
+Plots graphical representation of camera(s) showing pose
+
+```
+Usage: plotcamera(C, l; col=[0,0,1], plotCamPath=false, fig=1)
+
+Arguments:
+           C - Camera structure (or array of Camera structures)
+           l - The length of the sides of the rectangular cone indicating
+               the camera's field of view.
+Keyword Arguments:
+         col - Optional three element vector specifying the RGB colour to
+               use. Defaults to blue.
+ plotCamPath - Optional flag true/false to plot line joining camera centre
+               positions. If omitted or empty defaults to false.
+         fig - Optional figure number to be used. Defaults to 1.
+```
+
+The function plots into the current figure a graphical representation of one
+or more cameras showing their pose.  This consists of a rectangular cone,
+with its vertex at the camera centre, indicating the camera's field of view.
+The camera's coordinate X and Y axes are also plotted at the camera centre.
+
+See also: Camera

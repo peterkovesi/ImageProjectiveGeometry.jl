@@ -10,8 +10,8 @@ ImageProjectiveGeometry
 > Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl.git")
 ```
 
-Warning: While my demo tests seem to run OK a full test suite for
-these functions is yet to be completed.
+Warning: While my demo tests seem to run OK under 0.4 and 0.5 a full
+test suite for these functions is yet to be completed.
 
 ## Summary
 
@@ -54,6 +54,8 @@ matcher.  Ultimately could be contributed to the Images package.
 6. **ransacdemo.jl:** Functions demonstrating the use of ransac() to
 fit lines, planes, fundamental matrices and homographies.
 
+Also, within src, there are demo scripts for the different corner
+detectors and the morphological functions.
 
 ## Contribute
 
@@ -80,6 +82,6 @@ though feature matching probably belongs in its own package(s)
 
 ## Supplementary Material
 
-[The Fundamental Matrix Song](http://danielwedge.com/fmatrix/) by Daniel Wedge
-[The RANSAC Song](http://danielwedge.com/ransac/) by Daniel Wedge
+* [The Fundamental Matrix Song](http://danielwedge.com/fmatrix/) by Daniel Wedge
+* [The RANSAC Song](http://danielwedge.com/ransac/) by Daniel Wedge
 
