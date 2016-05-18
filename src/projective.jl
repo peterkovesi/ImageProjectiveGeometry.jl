@@ -171,7 +171,7 @@ function cameraproject(P::Array, pta::Array)
         error("Projection matrix must be 3x4")
     end
 
-    (rows, npts) = size(pt)
+    rows = size(pt,1)
     if rows != 3
         error("Points must be in a 3xN array")
     end
@@ -208,8 +208,7 @@ See also: Camera(), camstruct2projmatrix()
 function cameraproject(C::Camera, pta::Array)
 
     pt = copy(pta) # Make local copy
-
-    (rows, npts) = size(pt)
+    rows = size(pt,1)
     
     if rows != 3
         error("Points must be in a 3xN array")
@@ -279,7 +278,7 @@ end
 """
 imagept2plane - Project image points to a plane and return their 3D locations
 ```
-Usage:  pt = image2plane(C, xy, planeP, planeN)
+Usage:  pt = imagept2plane(C, xy, planeP, planeN)
 
 Arguments:  
          C - Camera structure, Alternatively
@@ -306,8 +305,14 @@ PK May 2015
 =#
 
 function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
-    
-    (dim, N) = size(xy)
+
+    dim = size(xy,1)
+    if isa(xy, Vector)
+        N = 1
+    else    
+        N = size(xy,2)
+    end
+
     if dim != 2
         error("Image xy data must be a 2 x N array")
     end
@@ -440,7 +445,7 @@ October  2010  Original version
 November 2013  Description of rotation matrix R corrected (transposed)
 =#
 
-function decomposecamera(P::Array)
+function decomposecamera{T1<:Real}(P::Array{T1,2})
 
     if size(P) != (3,4) 
         error("Projection matrix must be 3 x 4")
@@ -512,7 +517,7 @@ February 2014  Incorporated modifications suggested by Mathias Rothermel to
                avoid potential division by zero problems
 =#
 
-function rq3{T<:Real}(AA::Array{T})
+function rq3{T<:Real}(AA::Array{T,2})
     
     if size(AA) != (3,3)
         error("A must be 3x3")
@@ -572,11 +577,11 @@ See also: makeinhomogeneous(), hnormalise()
 # April 2010
 
 function makehomogeneous{T<:Real}(x::Array{T,2})
-    
-    (rows, npts) = size(x)
-    hx = ones(rows+1, npts)
-    hx[1:rows,:] = x
-    return hx
+    return [x; ones(1,size(x,2))]
+end
+
+function makehomogeneous{T<:Real}(x::Vector{T})
+    return [x;1]
 end
 
 #--------------------------------------------------------------------------
@@ -603,6 +608,13 @@ function makeinhomogeneous{T<:Real}(hx::Array{T,2})
     return x
 end
 
+function makeinhomogeneous{T<:Real}(hx::Vector{T})
+    
+    x = hnormalise(hx)  # Normalise to scale of one
+    x = x[1:end-1]      # Extract all but the last row
+    return x
+end
+
 #---------------------------------------------------------------------------
 """
 hnormalise - Normalises array of homogeneous coordinates to a scale of 1
@@ -621,16 +633,10 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 """
 # February 2004
 
-function hnormalise{T<:Real}(x::Union{Array{T,2},Vector{T}})
-    
-    if ndims(x) == 1
-        rows = length(x)
-        npts = 1
-    else
-        (rows,npts) = size(x)
-    end
+function hnormalise{T<:Real}(x::Array{T,2})
 
-    nx = copy(x)
+    nx = copy(x)    
+    (rows,npts) = size(nx)
 
     # Find the indices of the points that are not at infinity
     finiteind = find(abs(x[rows,:]) .> eps())
@@ -644,6 +650,17 @@ function hnormalise{T<:Real}(x::Union{Array{T,2},Vector{T}})
     return nx
 end
 
+function hnormalise{T<:Real}(x::Vector{T})
+
+    nx = copy(x)
+
+    # Only normalise if point is not at infinity
+    if abs(nx[end]) > eps()
+        nx /= nx[end]
+    end
+
+    return nx
+end
 
 #---------------------------------------------------------------------------
 """
@@ -1179,6 +1196,7 @@ See also: fundmatrix(), affinefundmatrix(), Camera()
 """
 # Reference: Hartley and Zisserman p244
 
+# Version for projection matrices
 function fundfromcameras{T1<:Real, T2<:Real}(P1::Array{T1,2}, P2::Array{T2,2})
     
     if (size(P1) != (3,4)) || (size(P2) != (3,4))
@@ -1223,9 +1241,9 @@ See also Camera(), cameraproject()
 # February 2016 Refined inversion of distortion process slightly
 #               Ported to Julia
 
-function idealimagepts{T<:Real}(C::Camera, xy::Array{T,2})
+function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
     
-    (dim,N) = size(xy)
+    dim = size(xy,1)
     if dim != 2
         error("Image xy data must be a 2 x N array")
     end

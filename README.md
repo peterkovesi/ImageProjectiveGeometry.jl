@@ -9,14 +9,14 @@ ImageProjectiveGeometry
 > Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl.git")
 ```
 
-Warning: While my demo tests seem to run OK under 0.4 and 0.5 a full
+Warning: While my demo tests seem to run OK under v0.4 and v0.5 a full
 test suite for these functions is yet to be completed.
 
 ## Summary
 
 This Image Projective Geometry package is intended as a starting point
 for the development of a library of projective geometry functions for
-computer vision.
+computer vision in Julia.
 
 Currently the package consists of a number of components which
 ultimately could/should be separated off into individual packages or

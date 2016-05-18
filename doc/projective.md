@@ -26,7 +26,7 @@ Projective Function Reference
 * [hline](#hline) - Plot a 2D line defined in homogeneous coordinates.
 * [plotcamera](#plotcamera) - Plots graphical representation of camera(s) showing pose.
 
-_________________
+_________________ 
 
 
 ## Camera 
@@ -111,7 +111,7 @@ See also: Camera(), camstruct2projmatrix()
 Project image points to a plane and return their 3D locations
 
 ```
-Usage:  pt = image2plane(C, xy, planeP, planeN)
+Usage:  pt = imagept2plane(C, xy, planeP, planeN)
 
 Arguments:  
          C - Camera structure, Alternatively
@@ -370,7 +370,9 @@ Returns:   s - 3x3 skew-symmetric matrix
 The cross product between two vectors, a x b can be implemented as a matrix
 product  skew(a)*b
 
-## hcross - Homogeneous cross product, result normalised to s = 1.
+## hcross 
+
+Homogeneous cross product, result normalised to s = 1.
 
 Function to form cross product between two points, or lines,
 in homogeneous coodinates.  The result is normalised to lie

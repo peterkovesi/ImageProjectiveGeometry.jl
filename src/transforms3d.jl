@@ -24,7 +24,7 @@ export dhtrans, homotrans
 export inveuler, invrpy
 export angleaxis, angleaxis2matrix, angleaxisrotate, normaliseangleaxis
 export matrix2angleaxis, matrix2quaternion, quaternion2matrix
-export quaternion, quaternionconjugate, quternionproduct, quaternionrotate
+export quaternion, quaternionconjugate, quaternionproduct, quaternionrotate
 export vector2quaternion
 
 #---------------------------------------------------------------------
@@ -38,7 +38,7 @@ Arguments:  x,y,z - translations in x,y and z, or alternatively
             v     - 3x1 vector or array defining x, y and z.
 Returns:    T     - 4x4 homogeneous transformation matrix.
 ```
-See also: rotx, roty, rotz, invht
+See also: rotx(), roty(), rotz(), invht()
 """
 
 function trans(x::Real, y::Real, z::Real)
@@ -70,7 +70,7 @@ Usage: T = rotx(theta)
 Argument:  theta  - rotation about x axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
-See also: trans, roty, rotz, invht
+See also: trans(), roty(), rotz(), invht()
 """
 function rotx(theta::Real)
     T = [ 1.0     0.0         0.0      0.0
@@ -88,7 +88,7 @@ Usage: T = roty(theta)
 Argument:  theta  - rotation about y axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
-See also: trans, rotx, rotz, invht
+See also: trans(), rotx(), rotz(), invht()
 """
 function roty(theta::Real)
     T = [ cos(theta)  0.0  sin(theta)  0.0
@@ -106,7 +106,7 @@ Usage: T = rotz(theta)
 Argument:  theta  - rotation about z axis
 Returns:    T     - 4x4 homogeneous transformation matrix
 ```
-See also: trans, rotx, roty, invht
+See also: trans(), rotx(), roty(), invht()
 """
 function rotz(theta::Real)
     T = [ cos(theta) -sin(theta)  0.0   0.0
@@ -124,7 +124,7 @@ Usage:  Tinv = invht(T)
 Argument:   T    - 4x4 homogeneous transformation matrix
 Returns:    Tinv - inverse
 ```
-See also: trans, rotx, roty, rotz
+See also: trans(), rotx(), roty(), rotz()
 """
 function invht{Ty<:Real}(T::Array{Ty,2})
     
@@ -149,7 +149,7 @@ Argument:  t - 3x1 vector or array specifying the rotation axis and having
                magnitude equal to the rotation angle in radians.
 Returns:   T - 4x4 Homogeneous transformation matrix.
 ```
-See also: matrix2angleaxis, angleaxisrotate, angleaxis, normaliseangleaxis
+See also: matrix2angleaxis(), angleaxisrotate(), angleaxis(), normaliseangleaxis()
 """
 function  angleaxis2matrix{Ty<:Real}(t::Array{Ty})
 
@@ -194,12 +194,11 @@ Arguments:  t  - 3-vector defining rotation axis and having magnitude
                  3xn matrix of inhomogeneous 3-vectors to be rotated.
 Returns:    v2 - The rotated vectors. 
 ```
-See also: matrix2angleaxis, angleaxis, angleaxis2matrix, normaliseangleaxis
+See also: matrix2angleaxis(), angleaxis(), angleaxis2matrix(), normaliseangleaxis()
 """
 function angleaxisrotate(t::Vector, v::Array)
     
-    (ndim, npts) = size(v)
-
+    ndim = size(v,1)
     T = angleaxis2matrix(t)
 
     if ndim == 3
@@ -232,7 +231,7 @@ Arguments:  theta - joint angle (rotation about local z)
 
 Returns:        T - 4x4 Homogeneous transformation matrix.
 ```
-See also: trans, rotx, roty, rotz, invht
+See also: trans(), rotx(), roty(), rotz(), invht()
 """
 function dhtrans(theta::Real, offset::Real, length::Real, twist::Real)
 
@@ -258,10 +257,13 @@ Arguments:
 Returns   t  - Transformed homogeneous coordinates
 ```
 """
-function homotrans{T<:Real}(P::Array{T}, v::Array{T})
+
+# 2D Array version
+
+function homotrans{T<:Real}(P::Array{T}, v::Array{T,2})
     
-    (dim,npts) = size(v)
-    
+    dim = size(v,1)
+
     if size(P) != (dim,dim)
         error("Transformation matrix and point dimensions do not match")
     end
@@ -273,6 +275,20 @@ function homotrans{T<:Real}(P::Array{T}, v::Array{T})
     end
     
     t[end,:] = 1.0
+    return t
+end
+
+# Vector version
+function homotrans{T<:Real}(P::Array{T}, v::Vector{T})
+    
+    dim = size(v,1)
+
+    if size(P) != (dim,dim)
+        error("Transformation matrix and point dimensions do not match")
+    end
+
+    t = P*v             # Transform
+    t /= t[end];        # Normalise to scale of 1 
     return t
 end
     
@@ -290,7 +306,7 @@ Returns: euler1 = [phi1, theta1, psi1] - the 1st solution and,
      rotz(phi1)   * roty(theta1)    * rotz(psi1)      = T
   rotz(euler1[1]) * roty(euler1[2]) * rotz(euler1[3]) = T
 ```
-See also: invrpy, invht, rotx, roty, rotz
+See also: invrpy(), invht(), rotx(), roty(), rotz()
 """
 #=
  Reference: Richard P. Paul  
@@ -330,7 +346,7 @@ Returns:  rpy1 = [phi1, theta1, psi1] - the 1st solution and
    rotz(phi1)  * roty(theta1)  * rotx(psi1)    = RPY
  rotz(rpy1[1]) * roty(rpy1[2]) * rotx(rpy1[3]) = RPY
 ```
-See also: inveuler, invht, rotx, roty, rotz
+See also: inveuler(), invht(), rotx(), roty(), rotz()
 """
 #=
   Reference: Richard P. Paul  
@@ -372,8 +388,7 @@ Returns:  ang - Rotation angle in radians.
 Note that only the top left 3x3 rotation component of T is used, any
 translation component in T is ignored.
 
-See also: angleaxis2matrix, angleaxis2matrix2, angleaxisrotate, angleaxis, 
-          normaliseangleaxis
+See also: angleaxis2matrix(), angleaxisrotate(), angleaxis(), normaliseangleaxis()
 """
 function matrix2angleandaxis(T::Array)
 
@@ -429,8 +444,7 @@ Returns:    t - 3x1 column vector giving rotation axis with magnitude equal
 Note that only the top left 3x3 rotation component of T is used, any
 translation component in T is ignored.
 
-See also: angleaxis2matrix, angleaxis2matrix2, angleaxisrotate, angleaxis,
-normaliseangleaxis
+See also: angleaxis2matrix(),  angleaxisrotate(), angleaxis(), normaliseangleaxis()
 
 """
 function matrix2angleaxis(T::Array)
@@ -449,7 +463,7 @@ Usage: Q = matrix2quaternion(T)
 Argument:   T - 4x4 Homogeneous transformation matrix
 Returns:    Q - 4-vector quaternion in the form [w, xi, yj, zk]
 ```
-See also: quaternion2matrix
+See also: quaternion2matrix()
 """
 function matrix2quaternion(T::Array)
     (theta, axis) = matrix2angleandaxis(T)
@@ -467,7 +481,7 @@ Arguments: theta - angle of rotation.
 Returns:   t     - 3-vector giving rotation axis with magnitude equal to the
                    rotation angle in radians.
 ```
-See also: matrix2angleaxis, angleaxisrotate, angleaxis2matrix, normaliseangleaxis
+See also: matrix2angleaxis(), angleaxisrotate(), angleaxis2matrix(), normaliseangleaxis()
 """
 function angleaxis(theta::Real, axis::Array)
     
@@ -501,7 +515,7 @@ Arguments: theta - angle of rotation
            axis  - 3x1 vector or array defining axis of rotation.
 Returns:   Q     - a 4-vector quaternion in the form [w, xi, yj, zk]
 ```
-See also:  quaternion2matrix, matrix2quaternion, quaternionrotate
+See also:  quaternion2matrix(), matrix2quaternion(), quaternionrotate()
 """
 function quaternion(theta::Real, axis::Array)
     
@@ -529,8 +543,7 @@ Argument:   t  - 3-vector giving rotation axis with magnitude equal to the
                  rotation angle in radians.
 Returns:    t2 - Normalised angle-axis descriptor
 ```
-See also: matrix2angleaxis, angleaxis, angleaxis2matrix, angleaxis2matrix2,
-angleaxisrotate
+See also: matrix2angleaxis(), angleaxis(), angleaxis2matrix(), angleaxisrotate()
 """
 
 function normaliseangleaxis(t::Array)
@@ -560,7 +573,7 @@ Usage:  T = quaternion2matrix(Q)
 Argument: Q - a quaternion in the form [w, xi, yj, zk].
 Returns:  T - 4x4 Homogeneous rotation matrix.
 ``` 
-See also: matrix2quaternion, quaternion, quaternionrotate
+See also: matrix2quaternion(), quaternion(), quaternionrotate()
 """
 function quaternion2matrix(Qu::Vector)
     
@@ -591,7 +604,7 @@ Usage: Qconj = quaternionconjugate(Q)
 Argument: Q     - Quaternions in the form  Q = [Qw, Qi, Qj, Qk].
 Returns:  Qconj - Conjugate.
 ```
-See also: quaternion, quaternionrotate, quaternionproduct
+See also: quaternion(), quaternionrotate(), quaternionproduct()
 """
 function quaternionconjugate(Q::Vector)
     
@@ -614,7 +627,7 @@ Arguments: A, B - Quaternions assumed to be 4-vectors in the
                   form  A = [Aw, Ai, Aj, Ak].
 Returns:   Q    - Quaternion product.
 ```
-See also: quaternion, quaternionrotate, quaternionconjugate
+See also: quaternion(), quaternionrotate(), quaternionconjugate()
 """
 function  quaternionproduct(A::Vector, B::Vector)
 
@@ -642,7 +655,7 @@ Arguments: Q - a quaternion in the form [w, xi, yj, zk]
                homogeneous 4-vector.
 Returns:   vnew - rotated vector.
 ```
-See also: matrix2quaternion, quaternion2matrix, quaternion
+See also: matrix2quaternion(), quaternion2matrix(), quaternion()
 """
 #=
 % Code forms the equivalent 3x3 rotation matrix from the quaternion and
@@ -666,9 +679,10 @@ function quaternionrotate(Q::Vector, v::Array)
 
 #** Check dimensions of v
 
-    # Copy v to vnew to allocate space.  If v is a 4 element homogeneous
-    # vector this also sets the homogeneous scale factor of vnew.
-    vnew = copy(v)
+    # Copy v to vnew to allocate space.  If v is a 4 element
+    # homogeneous vector this also sets the homogeneous scale factor
+    # of vnew. Ensure vnew is float so that we avoid Inexact errors
+    vnew = float(copy(v))
     
     Qw = Q[1];  Qi = Q[2];  Qj = Q[3];  Qk = Q[4]
     
@@ -681,9 +695,9 @@ function quaternionrotate(Q::Vector, v::Array)
     t8 =  -Qj*Qj
     t9 =   Qj*Qk
     t10 = -Qk*Qk
-    vnew[1] = 2.*( (t8 + t10)*v[1] + (t6 -  t4)*v[2] + (t3 + t7)*v[3] ) + v[1]
-    vnew[2] = 2.*( (t4 +  t6)*v[1] + (t5 + t10)*v[2] + (t9 - t2)*v[3] ) + v[2]
-    vnew[3] = 2.*( (t7 -  t3)*v[1] + (t2 +  t9)*v[2] + (t5 + t8)*v[3] ) + v[3]
+    vnew[1] = 2*( (t8 + t10)*v[1] + (t6 -  t4)*v[2] + (t3 + t7)*v[3] ) + v[1]
+    vnew[2] = 2*( (t4 +  t6)*v[1] + (t5 + t10)*v[2] + (t9 - t2)*v[3] ) + v[2]
+    vnew[3] = 2*( (t7 -  t3)*v[1] + (t2 +  t9)*v[2] + (t5 + t8)*v[3] ) + v[3]
 
     return vnew
 end
@@ -697,7 +711,7 @@ Usage: Q = vector2quaternion(v)
 Argument:  v - 3-vector.
 Returns:   Q - Quaternion given by [0; v]
 ```
-See also: quaternion, quaternionrotate, quaternionproduct, quaternionconjugate
+See also: quaternion(), quaternionrotate(), quaternionproduct(), quaternionconjugate()
 """
 function vector2quaternion(v::Array)
 
@@ -705,5 +719,5 @@ function vector2quaternion(v::Array)
       error("v must be a 3-vector")
   end
 
-  return Q = [0; v[:]]
+  return Q = [0.0; v[:]]
 end
