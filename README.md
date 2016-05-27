@@ -9,9 +9,6 @@ ImageProjectiveGeometry
 > Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl.git")
 ```
 
-Warning: While my demo tests seem to run OK under v0.4 and v0.5 a full
-test suite for these functions is yet to be completed.
-
 ## Summary
 
 This Image Projective Geometry package is intended as a starting point
@@ -63,8 +60,10 @@ though feature matching probably belongs in its own package(s)
 
 * These functions are mostly ported from MATLAB code at
  [http://www.peterkovesi.com/matlabfns](http://www.peterkovesi.com/matlabfns/index.html)
- Accordingly some of the code is still MATLABesque in nature.  Pull
- requests to make it more Julian are welcome.
+ Accordingly some of the code is still MATLABesque in nature.  There
+ are, no doubt, many optimisations that could be made and type
+ instabilities to be eliminated. Pull requests to make the code more Julian
+ are welcome.
 
 
 ## Supplementary Material

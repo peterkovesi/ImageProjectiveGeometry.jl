@@ -26,6 +26,8 @@ export gaussfilt
 export normalise, normalize, histtruncate
 export floatyx
 export matchbycorrelation
+export normalise, normalize, histtruncate
+export grey2census
 export keypause
 
 import Images, PyPlot
@@ -82,6 +84,7 @@ function derivative3{T<:Real}(img::Array{T,2}, spec)
     # Compute derivatives.  Note that in the 1st call below conv2
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
+    G = Array(Array,(length(spec),1))
     
     for n = 1:length(spec)
       if spec[n] == "x"
@@ -355,7 +358,7 @@ January   2016  Reworked to allow the N strongest features to be returned.
 =#
 
 function nonmaxsuppts{T<:Real}(cimg::Array{T,2}; radius::Real=1, thresh::Real=0, 
-                               N::Int=Inf, subpixel::Bool=false, img=[], fig = 1)
+                               N::Int=typemax(Int), subpixel::Bool=false, img=[], fig = 1)
 
     if radius < 1
         error("Radius must be 1 or greater")
@@ -537,6 +540,9 @@ end
 #---------------------------------------------------------------------
 
 # Unexported function that performs 1D erosion or dilation 
+
+# ** This function is slow because it repeatedly allocates and frees
+# ** space.  Need to develop a version erode_dilate1d!()
 
 #function erode_dilate1d{T<:Real}(f::Array{T,1}, ki::Real, 
 #                           erode_dilate::ASCIIString)
@@ -1347,6 +1353,246 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     return (m1, m2, p1ind, p2ind, cormat)
     
 end # of matchbycorrelation
+
+#----------------------------------------------------------------------
+"""
+grey2census - Convert image grey scale values to census values
+```
+Usage:  cimg = grey2census(img, window)
+
+Arguments:
+          img - greyscale image to be processed
+       window - Optional 2-vector [rows,cols] specifying the size of the
+                window to be considered in computing the census
+                transform. Defaults to [7, 9].  The values must be odd and
+                their product must not be greater than 64.
+Returns:
+         cimg - Census encoded UInt64 image.
+```
+Each pixel is encoded with a bit pattern formed by comparing the pixel with
+the pixels in the window around it. If a window pixel is less than the centre
+pixel its corresponding bit in the census encoding is set.  This provides an
+encoding that describes a pixel in terms of its surrounding pixels in a way
+that is invariant to lighting variations.  Note, however, that the encoding is
+dependent on the image orientation.
+
+Use the Hamming distance to compare encoded pixel values when matching.
+"""
+
+# Reference: Ramin Zabih and John Woodfill. Non-parametric Local
+# Transforms for Computing Visual Correspondence. European Conference
+# on Computer Vision, Stockholm, Sweden, May 1994, pages 151-158
+
+# ** There is a type instability that makes this slower than it should
+# ** be and the array slicing must be costly.
+
+function grey2census_slow{T<:Real,T2<:Integer}(img::Array{T,2}; window::Vector{T2}=[7,9])
+
+    (rows,cols) = size(img)    
+
+    nBits = window[1]*window[2]
+    if nBits > 64
+        error("Window must not have more than 64 elements")
+    end
+    
+    if iseven(window[1]) || iseven(window[2])
+        error("Window sizes must be odd")
+    end
+    
+    rrad = round(Int,(window[1]-1)/2)
+    crad = round(Int,(window[2]-1)/2)
+    
+    # Build table of values corresponding to each bit
+    bitval = UInt64[2^(b-1) for b=1:nBits]
+    
+    cimg = zeros(UInt64, rows, cols)
+    
+    for c = crad+1:cols-crad
+        for r = rrad+1:rows-rrad
+            cimg[r,c] = ((img[r-rrad:r+rrad, c-crad:c+crad] .< img[r,c])[:]'*bitval)[1]
+        end
+    end
+
+    return cimg
+end
+
+
+# Another attempt at census encoding.  About 5x faster
+
+function grey2census{T<:Real,T2<:Integer}(img::Array{T,2}; window::Vector{T2}=[7,9])
+
+    (rows,cols) = size(img)    
+
+    nBits = window[1]*window[2]
+    if nBits > 64
+        error("Window must not have more than 64 elements")
+    end
+    
+    if iseven(window[1]) || iseven(window[2])
+        error("Window sizes must be odd")
+    end
+    
+    rrad = round(Int,(window[1]-1)/2)
+    crad = round(Int,(window[2]-1)/2)
+    
+    # Build table of values corresponding to each bit
+    bitval = UInt64[2^(b-1) for b=1:nBits]
+    
+    cimg = zeros(UInt64, rows, cols)
+
+    # Build meshgrid of coordinates corresponding to all the offsets/bits
+    coff = [c for r = -rrad:rrad, c = -crad:crad]
+    roff = [r for r = -rrad:rrad, c = -crad:crad]
+
+    for n = 1:nBits
+        cimg[rrad+1:rows-rrad, crad+1:cols-crad] = 
+        cimg[rrad+1:rows-rrad, crad+1:cols-crad] + 
+        bitval[n]*(
+                img[rrad+1+roff[n]:rows-rrad+roff[n], crad+1+coff[n]:cols-crad+coff[n]] .< 
+                img[rrad+1:rows-rrad, crad+1:cols-crad])
+    end
+    
+    return cimg
+end
+
+#----------------------------------------------------------------------
+"""
+normalise - Normalises image values to 0-1, or to desired mean and variance
+```
+Usage 1:      nimg = normalise(img)
+```
+Offsets and rescales image so that the minimum value is 0
+and the maximum value is 1.  
+```
+Usage 2:      nimg = normalise(img, reqmean, reqvar)
+
+Arguments:  img     - A grey-level input image.
+            reqmean - The required mean value of the image.
+            reqvar  - The required variance of the image.
+```
+Offsets and rescales image so that nimg has mean reqmean and variance
+reqvar.  
+"""
+
+# Normalise 0 - 1
+function normalise(img::Array) 
+    n = img - minimum(img)
+    return n = n/maximum(n)
+end
+
+# Normalise to desired mean and variance
+function normalise(img::Array, reqmean::Real, reqvar::Real)
+    n = img - mean(img)
+    n = n/std(img)      # Zero mean, unit std dev
+    return n = reqmean + n*sqrt(reqvar)
+end
+
+# For those who spell normalise with a 'z'
+"""
+normalize - Normalizes image values to 0-1, or to desired mean and variance
+```
+Usage 1:      nimg = normalize(img)
+```
+Offsets and rescales image so that the minimum value is 0
+and the maximum value is 1.  
+```
+Usage 2:      nimg = normalize(img, reqmean, reqvar)
+
+Arguments:  img     - A grey-level input image.
+            reqmean - The required mean value of the image.
+            reqvar  - The required variance of the image.
+```
+Offsets and rescales image so that nimg has mean reqmean and variance
+reqvar.  
+"""
+
+function normalize(img::Array) 
+    return normalise(img)
+end
+
+function normalize(img::Array, reqmean::Real, reqvar::Real)
+    return normalise(img, reqmean, reqvar)
+end
+
+#----------------------------------------------------------------------
+"""
+histtruncate - Truncates ends of an image histogram.
+
+Function truncates a specified percentage of the lower and
+upper ends of an image histogram.
+
+This operation allows grey levels to be distributed across
+the primary part of the histogram.  This solves the problem
+when one has, say, a few very bright values in the image which
+have the overall effect of darkening the rest of the image after
+rescaling.
+```
+Usage: 
+1)   newimg = histtruncate(img, lHistCut, uHistCut)
+2)   newimg = histtruncate(img, HistCut)
+
+Arguments:
+ Usage 1)
+   img         -  Image to be processed.
+   lHistCut    -  Percentage of the lower end of the histogram
+                  to saturate.
+   uHistCut    -  Percentage of the upper end of the histogram
+                  to saturate.  If omitted or empty defaults to the value
+                  for lHistCut.
+ Usage 2)
+   HistCut     -  Percentage of upper and lower ends of the histogram to cut.
+
+Returns:
+   newimg      -  Image with values clipped at the specified histogram
+                  fraction values.  If the input image was colour the
+                  lightness values are clipped and stretched to the range
+                  0-1.  If the input image is greyscale no stretching is
+                  applied. You may want to use normalise() to achieve this.
+```
+See also: normalise
+"""
+
+# July      2001 - Original version
+# February  2012 - Added handling of NaN values in image
+# February  2014 - Code cleanup
+# September 2014 - Default for uHistCut + cleanup
+
+function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
+    
+    if lHistCut < 0 || lHistCut > 100 || uHistCut < 0 || uHistCut > 100
+	error("Histogram truncation values must be between 0 and 100")
+    end
+    
+    if ndims(img) > 2
+	error("histtruncate only defined for grey scale images")
+    end
+
+    newimg = copy(img)    
+    sortv = sort(newimg[:])   # Generate a sorted array of pixel values.
+
+    # Any NaN values will end up at the end of the sorted list. We
+    # need to ignore these.
+    N = sum(!isnan(sortv))  # Number of non NaN values.
+    
+    # Compute indicies corresponding to specified upper and lower fractions
+    # of the histogram.
+    lind = floor(Int, 1 + N*lHistCut/100)
+    hind =  ceil(Int, N - N*uHistCut/100)
+
+    low_val  = sortv[lind]
+    high_val = sortv[hind]
+
+    # Adjust image
+    newimg[newimg .< low_val] = low_val
+    newimg[newimg .> high_val] = high_val
+    
+    return newimg
+end
+
+
+function  histtruncate(img::Array, HistCut::Real)
+    return histtruncate(img, HistCut, HistCut)
+end
 
 #----------------------------------------------------------------------
 """

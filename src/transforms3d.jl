@@ -671,19 +671,21 @@ See also: matrix2quaternion(), quaternion2matrix(), quaternion()
 % Similar optimization applies to the other diagonal elements
 =#
 
-function quaternionrotate(Q::Vector, v::Array)
+function quaternionrotate(Q::Vector, v::Vector)
 
     if length(Q) != 4 
         error("Quaternion must be a 4 vector")
     end
 
-#** Check dimensions of v
+    if length(v) != 4 && length(v) != 3
+        error("Input vector must be of length 3 or 4")
+    end
 
     # Copy v to vnew to allocate space.  If v is a 4 element
     # homogeneous vector this also sets the homogeneous scale factor
     # of vnew. Ensure vnew is float so that we avoid Inexact errors
     vnew = float(copy(v))
-    
+
     Qw = Q[1];  Qi = Q[2];  Qj = Q[3];  Qk = Q[4]
     
     t2 =   Qw*Qi

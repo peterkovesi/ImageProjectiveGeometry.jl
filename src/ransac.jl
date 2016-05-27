@@ -759,7 +759,7 @@ end # of ransacfitplane
 """
 ransacfitline - Fits line to 3D array of points using RANSAC
 ```
-Usage  (L, inliers) = ransacfitline(XYZ, t, feedback)
+Usage  (V, L, inliers) = ransacfitline(XYZ, t, feedback)
 
 This function uses the RANSAC algorithm to robustly fit a line to a
 set of 3D data points or to a set of 2D homogeneous points with scale

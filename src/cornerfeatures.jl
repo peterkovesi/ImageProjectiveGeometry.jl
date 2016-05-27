@@ -113,7 +113,7 @@ function  harris{T<:Real}(img::Array{T,2}, sigma::Real=1; k::Real=0.04, args...)
 end
 
 # Case for img::AbstractImage 
-function harris{T}(img::Images.AbstractImage{T,2}, sigma; k::Real=0.04, args...)
+function harris{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; k::Real=0.04, args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -196,7 +196,7 @@ January   2016 - noble() made distict from harris() and argument handling
                  changed 
 =#
 
-function  noble(img::Array, sigma::Real; args...)
+function  noble{T<:Real}(img::Array{T,2}, sigma::Real=1; args...)
 
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)
     cimg = (Ix2.*Iy2 - Ixy.^2)./(Ix2 + Iy2 + eps()) 
@@ -211,7 +211,7 @@ function  noble(img::Array, sigma::Real; args...)
 end
 
 # Case for img::AbstractImage 
-function noble{T}(img::Images.AbstractImage{T,2}, sigma; args...)
+function noble{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -285,7 +285,7 @@ Computer Vision and Pattern Recognition. 1994.
 January 2016 - Original version
 =#
 
-function shi_tomasi(img, sigma::Real=1; args...)
+function shi_tomasi{T1<:Real}(img::Array{T1,2}, sigma::Real=1; args...)
 
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)    
 
@@ -297,7 +297,7 @@ function shi_tomasi(img, sigma::Real=1; args...)
     # L2 = T/2 - sqrt(T.^2/4 - D)
 
     # We just want the minimum eigenvalue
-    cimg = T/2 - sqrt(T.^2/4 - D)
+    cimg = T/2 - sqrt(T.^2/4 - D + eps())
     
     if !isempty(args)
         (r,c) = nonmaxsuppts(cimg; args...)
@@ -309,7 +309,7 @@ function shi_tomasi(img, sigma::Real=1; args...)
 end    
 
 # Case for img::AbstractImage 
-function shi_tomasi{T}(img::Images.AbstractImage{T,2}, sigma; args...)
+function shi_tomasi{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -353,7 +353,7 @@ property spatialorder set to ["y","x"].
 See also: structuretensor()
 """
 
-function coherence(img, sigma::Real=1)
+function coherence{T1<:Real}(img::Array{T1,2}, sigma::Real=1)
 
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)    
 
@@ -371,7 +371,7 @@ function coherence(img, sigma::Real=1)
 end
 
 # Case for img::AbstractImage 
-function coherence{T}(img::Images.AbstractImage{T,2}, sigma)
+function coherence{T}(img::Images.AbstractImage{T,2}, sigma::Real=1)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -451,7 +451,7 @@ property spatialorder set to ["y","x"].
 
 See also: harris(), noble(), shi_tomasi(), derivative5(), nonmaxsuppts()
 """
-function  hessianfeatures(img, sigma)
+function  hessianfeatures{T<:Real}(img::Array{T,2}, sigma::Real=1)
 
     if sigma > 0    # Convolve with Gaussian at desired sigma
         Gimg = Images.imfilter_gaussian(img,  [sigma, sigma])
@@ -473,7 +473,7 @@ function  hessianfeatures(img, sigma)
 end
 
 # Case for img::AbstractImage 
-function hessianfeatures{T}(img::Images.AbstractImage{T,2}, sigma)
+function hessianfeatures{T}(img::Images.AbstractImage{T,2}, sigma::Real=1)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)

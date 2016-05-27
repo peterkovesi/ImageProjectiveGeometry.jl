@@ -240,8 +240,8 @@ function cameraproject(C::Camera, pta::Array)
     
     # Follow classical projection process    
     # Generate normalized coords
-    x_n = pt[1,:]./pt[3,:]
-    y_n = pt[2,:]./pt[3,:]
+    x_n = pt[1:1,:]./pt[3:3,:]
+    y_n = pt[2:2,:]./pt[3:3,:]
     rsqrd = x_n.^2 + y_n.^2  # radius squared from centre
     
     # Radial distortion factor
@@ -322,8 +322,8 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     # Subtract principal point and divide by focal length to get normalised,
     # distorted image coordinates.  Note skew represents the 2D shearing
     # coefficient times fx
-    y_d = (xy[2,:] - C.ppy)/C.fy
-    x_d = (xy[1,:] - C.ppx - y_d*C.skew)/C.fx
+    y_d = (xy[2:2,:] - C.ppy)/C.fy
+    x_d = (xy[1:1,:] - C.ppx - y_d*C.skew)/C.fx
 
     # Radial distortion factor.  Here the squared radius is computed from the
     # already distorted coordinates.  The approximation we are making here is to
@@ -458,7 +458,7 @@ function decomposecamera{T1<:Real}(P::Array{T1,2})
     p4 = P[:,4]
 
     M = [p1 p2 p3];
-    m3 = M[3,:]'
+    m3 = M[3:3,:]'
     
     # Camera centre, analytic solution
     X =  det([p2 p3 p4])
@@ -634,7 +634,6 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 # February 2004
 
 function hnormalise{T<:Real}(x::Array{T,2})
-
     nx = copy(x)    
     (rows,npts) = size(nx)
 
@@ -651,7 +650,6 @@ function hnormalise{T<:Real}(x::Array{T,2})
 end
 
 function hnormalise{T<:Real}(x::Vector{T})
-
     nx = copy(x)
 
     # Only normalise if point is not at infinity
@@ -831,8 +829,14 @@ See also: normalise2dpts()
 
 # ? Can this be unified with normalise2dpts ?
 
-function normalise1dpts{Ty<:Real}(pts::Array{Ty,2})
-    
+function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
+
+    pts = copy(ptsa) # Copy because we alter ptsa (should be able to fix this)
+
+    if size(pts,1) != 2
+        error("pts must be 2xN")
+    end
+
     if any(pts[2,:] .== 0)
         warning("Attempt to normalise a point at infinity")
         return pts, eye(2)
@@ -1215,7 +1219,7 @@ end
 
 # Version using Camera structures
 function fundfromcameras(C1::Camera, C2::Camera)
-    return fundfromcamera(camera2projmatrix(C1), camera2projmatrix(C2))
+    return fundfromcameras(camera2projmatrix(C1), camera2projmatrix(C2))
 end
     
 #----------------------------------------------------------------------
