@@ -1,5 +1,3 @@
-using ImageProjectiveGeometry
-using Base.Test
 
 println("testing ransac")
 

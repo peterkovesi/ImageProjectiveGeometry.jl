@@ -2,9 +2,6 @@
 
 println("testing projective")
 
-using ImageProjectiveGeometry
-using Base.Test
-
 tol = 1e-8
 
 # Camera

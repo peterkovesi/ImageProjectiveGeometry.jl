@@ -1,6 +1,4 @@
 # Test utililties.jl
-using ImageProjectiveGeometry
-using Base.Test
 
 println("testing utilites")
 
