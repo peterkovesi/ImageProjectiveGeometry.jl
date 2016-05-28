@@ -198,6 +198,12 @@ first odd integer >= 6*sigma.
 If called with sigma = 0 the function immediately returns with im assigned
 to smim
 
+Note: it would be normally recommended to use Images.imfilter_gaussian()
+for smoothing as this is a much more efficient function.  However it
+seems that small sigma values (< 1) cause problems for that function.
+This function is less efficient but it will handle small values of
+sigma.
+
 See also:  integgaussfilt()
 
 

@@ -438,7 +438,7 @@ blobs you wish to detect are large you will need to use a value of sigma that
 is comparable in magnitude.
 
 The local minima of hdet is useful for marking the intersection points of a
-camera calibration checkerbaord pattern.  These saddle features seem to be
+camera calibration checkerboard pattern.  These saddle features seem to be
 more stable under scale variations.
 
 For example to get the 100 strongest saddle features in image `img` use:
