@@ -125,7 +125,7 @@ function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0,
 end
 
 # Contructor that takes a projection matrix
-function Camera(P::Matrix{T})
+function Camera{T<:AbstractFloat}(P::Matrix{T})
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
     end
