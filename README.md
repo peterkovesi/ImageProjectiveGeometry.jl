@@ -3,19 +3,18 @@ ImageProjectiveGeometry
 
 [![Build Status](https://travis-ci.org/peterkovesi/ImageProjectiveGeometry.jl.svg?branch=master)](https://travis-ci.org/peterkovesi/ImageProjectiveGeometry.jl)
 
-Note the code is passing all tests on v0.4 and has, in the past,
-passed tests on v0.5.  However, at the moments tests on the current
-release of v0.5 appear to be failing due to precompilation problems
-with PyPlot.  Click on the build status link for details.
-
 ----------------------------------------------
 
 ![banner image](doc/banner.png)
 
 ## Installation
 
+Install via the package manager
+
+
 ```
-> Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl.git")
+> Pkg.add("ImageProjectiveGeometry")
+
 ```
 
 ## Summary
