@@ -86,60 +86,64 @@ Constructors:
 
 """
 
-type Camera
-    fx::Real        # Focal length.
-    fy::Real
-    ppx::Real       # Principal point.
-    ppy::Real
-    k1::Real        # Radial lens distortion.
-    k2::Real
-    k3::Real
-    p1::Real        # Tangential lens distortion.
-    p2::Real
-    skew::Real
-    rows::Integer   # Optional, providing rows and columns allows detection
-    cols::Integer   # of points being projected out of image bounds.
-    P::Array        # Camera position in world coordinates.
-    Rc_w::Array     # Rotation matrix defining world orientation with 
+type Camera{T<:AbstractFloat}
+    fx::T           # Focal length.
+    fy::T
+    ppx::T          # Principal point.
+    ppy::T
+    k1::T           # Radial lens distortion.
+    k2::T
+    k3::T
+    p1::T           # Tangential lens distortion.
+    p2::T
+    skew::T
+    rows::Int       # Optional, providing rows and columns allows detection
+    cols::Int       # of points being projected out of image bounds.
+    P::Vector{T}    # Camera position in world coordinates.
+    Rc_w::Matrix{T} # Rotation matrix defining world orientation with
                     # respect to the camera frame.
-
-    # Keyword-value constructor
-    function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0, 
-                    k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, skew=0.0, 
-                    rows=0, cols=0,
-                    P=[0.0, 0.0, 0.0], Rc_w=eye(3)) 
-        if size(P) != (3,)
-            error("Camera position must be a 3x1 array")
-        end
-
-        if size(Rc_w) != (3,3)
-            error("Camera orientation must be a 3x3 rotation matrix")
-        end
-
-        new(fx, fy, ppx, ppy, k1, k2, k3, p1, p2, skew, rows, cols, P, Rc_w) 
-    end
-
-    # Contructor that takes a projection matrix
-    function Camera(P::Array)
-        if size(P) != (3,4)
-            error("Projection matrix must be 3x4")
-        end
-        
-        (K, Rc_w, Pc, pp, pv) = decomposecamera(P)
-        fx = K[1,1]
-        fy = K[2,2]
-        skew = K[1,2]
-        k1 = 0.0
-        k2 = 0.0
-        k3 = 0.0
-        p1 = 0.0
-        p2 = 0.0
-        rows = 0
-        cols = 0
-        new(fx, fy, pp[1], pp[2], k1, k2, k3, p1, p2, skew, rows, cols, Pc, Rc_w) 
-    end
-
 end
+
+# Keyword-value constructor
+function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0,
+                k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, skew=0.0,
+                rows=0, cols=0,
+                P=[0.0, 0.0, 0.0], Rc_w=eye(3))
+    if size(P) != (3,)
+        error("Camera position must be a 3x1 array")
+    end
+
+    if size(Rc_w) != (3,3)
+        error("Camera orientation must be a 3x3 rotation matrix")
+    end
+
+     # Get the promotion type
+     args = promote(fx,fy,ppx,ppy,k1,k2,k3,p1,p2,skew,P[1],Rc_w[1,1])
+     T = eltype(args)
+
+     return Camera{T}(fx, fy, ppx, ppy, k1, k2, k3, p1, p2, skew, rows, cols, P, Rc_w)
+end
+
+# Contructor that takes a projection matrix
+function Camera(P::Matrix{T})
+    if size(P) != (3,4)
+        error("Projection matrix must be 3x4")
+    end
+
+    (K, Rc_w, Pc, pp, pv) = decomposecamera(P)
+    fx = K[1,1]
+    fy = K[2,2]
+    skew = K[1,2]
+    k1 = 0.0
+    k2 = 0.0
+    k3 = 0.0
+    p1 = 0.0
+    p2 = 0.0
+    rows = 0
+    cols = 0
+    Camera{T}(fx, fy, pp[1], pp[2], k1, k2, k3, p1, p2, skew, rows, cols, Pc, Rc_w)
+end
+
 
 #-------------------------------------------------------------------------
 """
