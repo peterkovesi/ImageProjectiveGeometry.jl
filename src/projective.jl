@@ -34,13 +34,10 @@ import PyPlot
 #=
 imTrans.m 
 imTransD.m
-digiplane.m
 equalAngleConstraint.m 
 knownAngleConstraint.m 
 lengthRatioConstraint 
-circleintersect.m 
 homoTrans 2D homogeneous transformation of points/lines.
-plotPoint.m Plots point with specified mark and optional text label.
 undistortimage.m
 =#
 

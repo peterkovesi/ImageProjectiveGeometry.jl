@@ -38,6 +38,7 @@ include("ransac.jl")
 include("cornerfeatures.jl")
 include("utilities.jl")
 include("ransacdemo.jl")
+include("geometry.jl")
 
 end  # module
 

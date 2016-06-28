@@ -52,8 +52,12 @@ including nonmaximal suppression, image derivative computation and
 efficient morphological dilation and erosion using rectangular and
 octagonal structuring elements.  There is also a basic correlation
 matcher.  Ultimately could be contributed to the Images package.
-* [**ransacdemo**](doc/ransacdemo.md) Functions demonstrating the use of
-ransac() to fit lines, planes, fundamental matrices and homographies.
+* [**geometry**](doc/geometry.md) Functions for some basic
+geometric operations: minimum distance between 3D rays, intersection
+of circles, convex polygons etc.
+* [**ransacdemo**](doc/ransacdemo.md) Functions demonstrating the use
+of ransac() to fit lines, planes, fundamental matrices and
+homographies.
 
 Also, within src, there are demo scripts for the different corner
 detectors and the morphological functions.
