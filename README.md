@@ -13,7 +13,9 @@ Install via the package manager
 
 
 ```
-> Pkg.add("ImageProjectiveGeometry")
+julia> Pkg.add("ImageProjectiveGeometry")
+
+help?> ImageProjectiveGeometry  # Lists a summary of the package functions 
 
 ```
 
