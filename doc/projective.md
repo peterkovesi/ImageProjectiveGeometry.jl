@@ -252,7 +252,7 @@ of these points are simply returned minus their scale coordinate.
 See also: makehomogeneous(), hnormalise()
 
 
-## hnormalise 
+## hnormalise
 
 Normalises array of homogeneous coordinates to a scale of 1.
 
@@ -272,7 +272,7 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 
 See also: hnormalise!()
 
-## hnormalise! 
+## hnormalise!
 
 In-place normalisation of homogeneous coordinates to a scale of 1.
 

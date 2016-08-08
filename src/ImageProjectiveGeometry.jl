@@ -41,6 +41,7 @@ Peter Kovesi
 * makehomogeneous - Appends a scale of 1 to an array inhomogeneous coordinates.
 * makeinhomogeneous - Converts homogeneous coords to inhomogeneous coordinates.
 * hnormalise - Normalises array of homogeneous coordinates to a scale of 1.
+* hnormalise! - In-place normalisation of homogeneous coordinates to a scale of 1.
 * homography1d - Computes 1D homography.
 * homography2d - Computes 2D homography.
 * normalise1dpts - Normalises 1D homogeneous points.
@@ -52,6 +53,7 @@ Peter Kovesi
 * fundfromcameras - Fundamental matrix from camera matrices or structures.
 * idealimagepts - Ideal image points with no distortion.
 * solvestereopt - Homogeneous linear solution of a stereo point.
+* undistortimage - Removes lens distortion from an image.
 * hline - Plot a 2D line defined in homogeneous coordinates.
 * plotcamera - Plots graphical representation of camera(s) showing pose.
 
