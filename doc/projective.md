@@ -12,6 +12,7 @@ Projective Function Reference
 * [makehomogeneous](#makehomogeneous) - Appends a scale of 1 to an array inhomogeneous coordinates.
 * [makeinhomogeneous](#makeinhomogeneous) - Converts homogeneous coords to inhomogeneous coordinates.
 * [hnormalise](#hnormalise) - Normalises array of homogeneous coordinates to a scale of 1.
+* [hnormalise!](#hnormalise!) - In-place normalisation of homogeneous coordinates to a scale of 1.
 * [homography1d](#homography1d) - Computes 1D homography.
 * [homography2d](#homography2d) - Computes 2D homography.
 * [normalise1dpts](#normalise1dpts) - Normalises 1D homogeneous points.
@@ -23,6 +24,7 @@ Projective Function Reference
 * [fundfromcameras](#fundfromcameras) - Fundamental matrix from camera matrices or structures.
 * [idealimagepts](#idealimagepts) - Ideal image points with no distortion.
 * [solvestereopt](#solvestereopt) - Homogeneous linear solution of a stereo point.
+* [undistortimage](#undistortimage) - Removes lens distortion from an image.
 * [hline](#hline) - Plot a 2D line defined in homogeneous coordinates.
 * [plotcamera](#plotcamera) - Plots graphical representation of camera(s) showing pose.
 
@@ -88,19 +90,23 @@ Returns:
             xy - 2xN matrix of projected image positions.
 
 
-
-Usage 2:  (xy, visible) = cameraproject(C, pt)
+Usage 2:         xy = cameraproject(C, pt, computevisibility = false)
+      (xy, visible) = cameraproject(C, pt, computevisibility = true)
 
 Arguments: 
              C - Camera structure.
             pt - 3xN matrix of 3D points to project into the image.
+
+Keyword Argument:
+ computevisibility - If set to true point visibility is returned
+                     The default value is false.
+
 Returns: 
-       xy      - 2xN matrix of projected image positions
-       visible - Array of values 1/0 indicating whether the point is
+       xy      - 2xN matrix of projected image positions.
+       visible - Boolean array indicating whether the point is
                  within the field of view.  This is only evaluated if
-                 the camera structure has non zero values for its
-                 'rows' and 'cols' fields. Otherwise an empty matrix
-                 is returned.
+                 'computevisibility' is true the camera structure has 
+                 non zero values for its 'rows' and 'cols' fields. 
 ```
 
 See also: Camera(), camstruct2projmatrix()
@@ -258,11 +264,33 @@ Argument:
 
 Returns:
         nx - an Nxnpts array of homogeneous coordinates rescaled so
-             that the scale values nx(N,:) are all 1.
+             that the scale values nx[end,:] are all 1.
 ```
 
 Note that any homogeneous coordinates at infinity (having a scale value of
 0) are left unchanged.
+
+See also: hnormalise!()
+
+## hnormalise! 
+
+In-place normalisation of homogeneous coordinates to a scale of 1.
+
+```
+Usage:   hnormalise!(x)
+
+Argument:
+        x - An Nxnpts array of homogeneous coordinates.
+
+Return value and side effect:
+        x - The homogeneous coordinates in x are rescaled so
+            that the scale values x[end,:] are all 1.
+```
+
+Note that any homogeneous coordinates at infinity (having a scale value of
+0) are left unchanged.
+
+See also: hnormalise()
 
 
 ## homography1d 
@@ -490,8 +518,11 @@ See also Camera(), cameraproject()
 Homogeneous linear solution of a stereo point.
 
 ```
-Usage:  (pt, xy_reproj) = solvestereopt(xy, P)
-        (pt, xy_reproj) = solvestereopt(xy, C)
+Usage:  
+        pt = solvestereopt(xy, P)
+        pt = solvestereopt(xy, C)
+        (pt, xy_reproj) = solvestereopt(xy, P, reprojecterror=true)
+        (pt, xy_reproj) = solvestereopt(xy, C, reprojecterror=true)
 
 Multiview stereo: Solves 3D location of a point given image coordinates of
 that point in two, or more, images.
@@ -501,6 +532,8 @@ Arguments:    xy - 2xN matrix of x, y image coordinates, one column for
                P - N array of corresponding 3x4 image projection
                    matrices, or
                C - an N array of Camera structures
+Keyword Argument:
+  reprojecterror - Boolean flag indicating whether reprojection errors should be retunred.
 
 Returns:      pt - 3D location in space returned in normalised
                    homogeneous coordinates (a 4-vector with last element = 1)
@@ -508,6 +541,37 @@ Returns:      pt - 3D location in space returned in normalised
 ```
 
 See also: idealimagepts(), camstruct2projmatrix(), Camera()
+
+
+## undistortimage
+
+Removes lens distortion from an image
+
+```
+Usage 1:  nimg = undistortimage(img, f, ppx, ppy, k1, k2, k3, p1, p2)
+
+Arguments: 
+         img - Image to be corrected.
+           f - Focal length in terms of pixel units 
+               (focal_length_mm/pixel_size_mm)
+    ppx, ppy - Principal point location in pixels.
+  k1, k2, k3 - Radial lens distortion parameters.
+      p1, p2 - Tangential lens distortion parameters.
+
+Usage 2.  nimg = undistortimage(img, camera)
+
+Arguments: 
+         img - Image to be corrected.
+         cam - Camera structure.
+
+Returns:  
+         nimg - Corrected image.
+```
+
+It is assumed that radial and tangential distortion parameters are
+computed/defined with respect to normalised image coordinates corresponding
+to an image plane 1 unit from the projection centre.  This is why the
+focal length is required.
 
 
 ## hline 

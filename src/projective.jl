@@ -22,14 +22,14 @@ PK February 2016
 
 export Camera
 export cameraproject, camera2projmatrix, imagept2plane, decomposecamera, rq3
-export makehomogeneous, makeinhomogeneous, hnormalise
+export makehomogeneous, makeinhomogeneous, hnormalise, hnormalise!
 export homography1d, homography2d, normalise1dpts, normalise2dpts 
 export skew, hcross
 export fundmatrix, affinefundmatrix, fundfromcameras
-export idealimagepts, solvestereopt
+export idealimagepts, solvestereopt, undistortimage
 export hline, plotcamera
 
-import PyPlot
+using PyPlot, Interpolations
 
 #=
 imTrans.m 
@@ -38,7 +38,7 @@ equalAngleConstraint.m
 knownAngleConstraint.m 
 lengthRatioConstraint 
 homoTrans 2D homogeneous transformation of points/lines.
-undistortimage.m
+
 =#
 
 #------------------------------------------------------------------------
@@ -164,49 +164,51 @@ PK September 2008
 =#
 # Projection matrix version
 
-function cameraproject(P::Array, pta::Array)
-
-    pt = copy(pta) # Code should be altered so that this is not needed
+function cameraproject(P::Array, pt::Array)
 
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
     end
 
-    rows = size(pt,1)
-    if rows != 3
+    if size(pt, 1) != 3
         error("Points must be in a 3xN array")
     end
     
     xy = P*makehomogeneous(pt)
     xy = makeinhomogeneous(xy)
-    visible = []
 
-    return xy, visible
+    return xy
 end    
 
 #--------------------------------------------------------------------------
 """
 cameraproject - Projects 3D points into camera image 
 ```
-Usage:  (xy, visible) = cameraproject(C, pt)
+Usage:             xy = cameraproject(C, pt, computevisibility = false)
+        (xy, visible) = cameraproject(C, pt, computevisibility = true)
 
 Arguments: 
              C - Camera structure.
             pt - 3xN matrix of 3D points to project into the image.
+
+Keyword Argument:
+ computevisibility - If set to true point visibility is returned
+                     The default value is false.
+
 Returns: 
        xy      - 2xN matrix of projected image positions
-       visible - Array of values 1/0 indicating whether the point is
+       visible - Boolean array indicating whether the point is
                  within the field of view.  This is only evaluated if
-                 the camera structure has non zero values for its
-                 'rows' and 'cols' fields. Otherwise an empty matrix
-                 is returned.
+                 'computevisibility is true and the camera structure has 
+                 non zero values for its 'rows' and 'cols' fields. 
+
 ```
 See also: Camera(), camstruct2projmatrix()
 """
 
 # Camera structure version
 
-function cameraproject(C::Camera, pta::Array)
+function cameraproject(C::Camera, pta::Array; computevisibility = false)
 
     pt = copy(pta) # Make local copy
     rows = size(pt,1)
@@ -265,14 +267,20 @@ function cameraproject(C::Camera, pta::Array)
 	  y_p]
     
     # If C.rows and C.cols not empty determine points that are within image bounds
-    if C.rows !=0 && C.cols != 0
-        visible = (x_p .>= 1.0) & (x_p .<= convert(Float64,C.cols)) &
-                  (y_p .>= 1.0) & (y_p .<= convert(Float64,C.rows))
+    if computevisibility 
+        if C.rows !=0 && C.cols != 0
+            visible = (x_p .>= 1.0) & (x_p .<= convert(Float64,C.cols)) &
+                      (y_p .>= 1.0) & (y_p .<= convert(Float64,C.rows))
+        else
+            warn("Point visibility requested but Camera structure has no image size data")
+            visible = []
+        end
+
+        return xy, visible
     else
-        visible = []
+        return xy
     end
 
-    return xy, visible
 end
 
 #--------------------------------------------------------------------------
@@ -307,13 +315,7 @@ PK May 2015
 
 function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
 
-    dim = size(xy,1)
-    if isa(xy, Vector)
-        N = 1
-    else    
-        N = size(xy,2)
-    end
-
+    (dim, N) = size(xy, 1, 2)
     if dim != 2
         error("Image xy data must be a 2 x N array")
     end
@@ -518,29 +520,27 @@ February 2014  Incorporated modifications suggested by Mathias Rothermel to
                avoid potential division by zero problems
 =#
 
-function rq3{T<:Real}(AA::Array{T,2})
+function rq3{T<:Real}(A::Array{T,2})
     
-    if size(AA) != (3,3)
+    if size(A) != (3,3)
         error("A must be 3x3")
     end
-    
-    A = copy(AA)  # Avoid side effects when we add eps(1e6) to A[3,3]
 
-    # Find rotation Qx to set A[3,2] to 0
-    A[3,3] = A[3,3] + eps(1e6)
-    c = -A[3,3]/sqrt(A[3,3]^2+A[3,2]^2)
-    s =  A[3,2]/sqrt(A[3,3]^2+A[3,2]^2)
+    # Find rotation Qx required to set A[3,2] to 0
+    A33 = A[3,3] + eps(1e6)  # Avoid side effects when we add eps(1e6) 
+    c = -A33/sqrt(A33^2+A[3,2]^2)
+    s =  A[3,2]/sqrt(A33^2+A[3,2]^2)
     Qx = [1 0 0; 0 c -s; 0 s c]
     R = A*Qx
     
-    # Find rotation Qy to set A[3,1] to 0
+    # Find rotation Qy required to set A[3,1] to 0
     R[3,3] = R[3,3] + eps(1e6)
     c = R[3,3]/sqrt(R[3,3]^2+R[3,1]^2)
     s = R[3,1]/sqrt(R[3,3]^2+R[3,1]^2)
     Qy = [c 0 s; 0 1 0;-s 0 c]
     R = R*Qy
     
-    # Find rotation Qz to set A[2,1] to 0
+    # Find rotation Qz required to set A[2,1] to 0
     R[2,2] = R[2,2] + eps(1e6)
     c = -R[2,2]/sqrt(R[2,2]^2+R[2,1]^2)
     s =  R[2,1]/sqrt(R[2,2]^2+R[2,1]^2)    
@@ -627,38 +627,53 @@ Argument:
 
 Returns:
         nx - an Nxnpts array of homogeneous coordinates rescaled so
-             that the scale values nx(N,:) are all 1.
+             that the scale values nx[end,:] are all 1.
 ```
 Note that any homogeneous coordinates at infinity (having a scale value of
 0) are left unchanged.
+
+See also: hnormalise!()
 """
-# February 2004
 
-function hnormalise{T<:Real}(x::Array{T,2})
-    nx = copy(x)    
-    (rows,npts) = size(nx)
-
-    # Find the indices of the points that are not at infinity
-    finiteind = find(abs(x[rows,:]) .> eps())
-
-    # Normalise points not at infinity
-    for r = 1:rows-1
-	nx[r,finiteind] = x[r,finiteind]./x[rows,finiteind]
-    end
-
-    nx[rows,finiteind] = 1.0
-    return nx
+function hnormalise{T<:Real}(x::Union{Array{T,2},Vector{T}})
+    hnormalise!(copy(x))
 end
 
-function hnormalise{T<:Real}(x::Vector{T})
-    nx = copy(x)
+#---------------------------------------------------------------------------
+"""
+hnormalise! - In-place normalisation of homogeneous coordinates to a scale of 1 
+```
+Usage:   hnormalise!(x)
 
-    # Only normalise if point is not at infinity
-    if abs(nx[end]) > eps()
-        nx /= nx[end]
+Argument:
+        x - An Nxnpts array of homogeneous coordinates.
+
+Return value and side effect:
+        x - The homogeneous coordinates in x are rescaled so
+            that the scale values x[end,:] are all 1.
+```
+Note that any homogeneous coordinates at infinity (having a scale value of
+0) are left unchanged.
+
+See also: hnormalise()
+
+"""
+
+# Inplace version
+function hnormalise!{T<:Real}(x::Union{Array{T,2},Vector{T}})
+    
+    (rows, npts) = size(x, 1, 2)
+
+    for n = 1:npts
+        if abs(x[rows, n]) > eps(T)   # point not at infinity
+            for r = 1:rows-1
+                x[r, n] /= x[rows, n]
+            end
+            x[rows, n] = 1
+        end
     end
 
-    return nx
+    return x 
 end
 
 #---------------------------------------------------------------------------
@@ -686,7 +701,7 @@ function homography1d{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
         error("x1 and x2 must have same dimensions")
     end
     
-    (dim, Npts) = size(x1)
+    (dim, Npts) = size(x1, 1, 2)
 
     # Attempt to normalise each set of points so that the origin 
     # is at centroid and mean distance from origin is 1.
@@ -751,7 +766,7 @@ function homography2d{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, Npts) = size(x1)
+    (dim, Npts) = size(x1, 1, 2)
 
     if dim != 3 
         error("pts must be 3xN")
@@ -791,7 +806,7 @@ end
 # Version with a single argument for use with ransac()
 function homography2d{T<:Real}(x::Array{T,2})
 
-    (dim, npts) = size(x)
+    (dim, npts) = size(x, 1, 2)
 
     if dim != 6 
         error("pts must be a 6xN array")
@@ -1015,7 +1030,7 @@ function  fundmatrix{T1<:Real,T2<:Real}(x1i::Array{T1,2}, x2i::Array{T2,2}; epip
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, npts) = size(x1i)
+    (dim, npts) = size(x1i, 1, 2)
 
     if dim != 3 
         error("pts must be a 3xN array of homogeneous coords")
@@ -1079,7 +1094,7 @@ end
 # Version with a single argument for use with ransac()
 function fundmatrix{T<:Real}(x::Array{T,2})
 
-    (dim, npts) = size(x)
+    (dim, npts) = size(x, 1, 2)
 
     if dim != 6 
         error("pts must be a 6xN array")
@@ -1134,7 +1149,7 @@ function affinefundmatrix{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, npts) = size(x1)
+    (dim, npts) = size(x1, 1, 2)
 
     if dim != 2
         error("pts must be a 2xN array of inhomogeneous image coords")
@@ -1226,6 +1241,7 @@ end
 #----------------------------------------------------------------------
 """
 idealimagepts - Ideal image points with no distortion.
+
 ```
 Usage:  xyideal = idealimagepts(C, xy)
 
@@ -1239,6 +1255,7 @@ Returns:
              distortion.  That is, if they had been projected using an ideal
              projection matrix computed from fx, fy, ppx, ppy, skew.
 ```
+
 See also Camera(), cameraproject()
 """
 
@@ -1248,8 +1265,7 @@ See also Camera(), cameraproject()
 
 function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
     
-    dim = size(xy,1)
-    if dim != 2
+    if size(xy, 1) != 2
         error("Image xy data must be a 2 x N array")
     end
     
@@ -1294,8 +1310,11 @@ end
 """
 solvestereopt - Homogeneous linear solution of a stereo point
 ```
-Usage:  (pt, xy_reproj) = solvestereopt(xy, P)
-        (pt, xy_reproj) = solvestereopt(xy, C)
+Usage:  
+        pt = solvestereopt(xy, P)
+        pt = solvestereopt(xy, C)
+        (pt, xy_reproj) = solvestereopt(xy, P, reprojecterror=true)
+        (pt, xy_reproj) = solvestereopt(xy, C, reprojecterror=true)
 
 Multiview stereo: Solves 3D location of a point given image coordinates of
 that point in two, or more, images.
@@ -1304,7 +1323,8 @@ Arguments:    xy - 2xN matrix of x, y image coordinates, one column for
                    each camera.
                P - N array of corresponding 3x4 image projection
                    matrices, or
-               C - an N array of Camera structures
+               C - An N array of Camera structures
+  reprojecterror - Boolean flag indicating whether reprojection errors should be retunred.
 
 Returns:      pt - 3D location in space returned in normalised
                    homogeneous coordinates (a 4-vector with last element = 1)
@@ -1314,9 +1334,9 @@ Returns:      pt - 3D location in space returned in normalised
 See also: idealimagepts(), camstruct2projmatrix(), Camera()
 """
 
-function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}})
+function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}}; reprojecterror=false)
 
-    (dim,N) = size(xy)
+    (dim,N) = size(xy, 1, 2)
     @assert N == length(P) "Number of points and cameras must match"
     @assert dim == 2  "Image coordinates must be a 2xN array of inhomogeneous coords"
     @assert N >= 2  "Must have at least 2 camera views"
@@ -1331,20 +1351,25 @@ function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}}
     (~,~,v) = svd(A)
     pt = hnormalise(v[:,4])
     
-    # Project the point back into the source images to determine the residual
-    # error
-    xy_reproj = zeros(size(xy))
-    for n = 1:N
-        xy_reproj[:,n] = cameraproject(P[n], pt[1:3])
-    end    
+    if reprojecterror
+        # Project the point back into the source images to determine the residual
+        # error
+        xy_reproj = zeros(size(xy))
+        for n = 1:N
+            xy_reproj[:,n] = cameraproject(P[n], pt[1:3])
+        end    
+        
+        return pt, xy_reproj
+    else
+        return pt
+    end
 
-    return pt, xy_reproj
 end
 
 # Version where the camera data is an array of Camera structures
-function solvestereopt{T<:Real}(xy::Array{T,2}, C::Array{Camera})
+function solvestereopt{T<:Real}(xy::Array{T,2}, C::Array{Camera}; reprojecterror=false)
 
-    (dim,N) = size(xy)
+    (dim,N) = size(xy, 1, 2)
     @assert N == length(C) "Number of points and cameras must match"
     @assert dim == 2  "Image coordinates must be a 2xN array of inhomogeneous coords"
     @assert N >= 2  "Must have at least 2 camera views"
@@ -1358,7 +1383,136 @@ function solvestereopt{T<:Real}(xy::Array{T,2}, C::Array{Camera})
         P[n] = camstruct2projmatrix(C[n])
     end
 
-    return solvestereopt(xyideal, P)
+    return solvestereopt(xyideal, P, reprojecterror=reprojecterror)
+end
+
+
+
+#---------------------------------------------------------------------
+"""
+undistortimage - Removes lens distortion from an image
+
+```
+Usage 1:  nimg = undistortimage(img, f, ppx, ppy, k1, k2, k3, p1, p2)
+
+Arguments: 
+         img - Image to be corrected.
+           f - Focal length in terms of pixel units 
+               (focal_length_mm/pixel_size_mm)
+    ppx, ppy - Principal point location in pixels.
+  k1, k2, k3 - Radial lens distortion parameters.
+      p1, p2 - Tangential lens distortion parameters.
+
+Usage 2.  nimg = undistortimage(img, camera)
+
+Arguments: 
+         img - Image to be corrected.
+         cam - Camera structure.
+
+Returns:  
+         nimg - Corrected image.
+```
+
+It is assumed that radial and tangential distortion parameters are
+computed/defined with respect to normalised image coordinates corresponding
+to an image plane 1 unit from the projection centre.  This is why the
+focal length is required.
+
+"""
+
+# ** Allow for separate valuees of fx and fy ??
+
+# Version for image represented by 2D array 
+function undistortimage{T<:Real}(img::Array{T,2}, f::Real,
+                       ppx::Real, ppy::Real, k1::Real, k2::Real, k3::Real, 
+                       p1::Real, p2::Real)
+    
+    # Strategy: Generate a grid of coordinate values corresponding to
+    # an ideal undistorted image.  We then apply the imaging process
+    # to these coordinates, including lens distortion, to obtain the
+    # actual distorted image locations.  In this process these
+    # distorted image coordinates end up being stored in a matrix that
+    # is indexed via the original ideal, undistorted coords.  Thus for
+    # every undistorted pixel location we can determine the location
+    # in the distorted image that we should map the grey value from.
+    
+    (rows, cols) = size(img)
+    nimg = zeros(size(img))
+    
+    # Set up interpolant
+    itp = interpolate(img, BSpline(Linear()), OnCell())
+
+    # Interpolate values from distorted image locations to their
+    # ideal locations.    
+    for xu = 1:cols, yu = 1:rows
+        (xd, yd) = distortedcoords(xu, yu, f, ppx, ppy, k1, k2, k3, p1, p2)
+        nimg[yu,xu] = itp[yd, xd]
+    end
+    
+    return nimg
+end
+
+function undistortimage(img, cam::Camera)
+    undistortimage(img, cam.fx, cam.ppx, cam.ppy, cam.k1, cam.k2, cam.k3, cam.p1, cam.p2)
+end
+
+# Version for image represented by 3D array 
+function undistortimage{T<:Real}(img::Array{T,3}, f::Real,
+                       ppx::Real, ppy::Real, k1::Real, k2::Real, k3::Real, 
+                       p1::Real, p2::Real)
+    
+    (rows, cols, channels) = size(img)
+    nimg = zeros(size(img))
+    
+    # Interpolate values from distorted image locations to their
+    # ideal locations. ** should construct array of interpolants **
+    for chan = 1:channels
+        itp = interpolate(img[:,:,chan], BSpline(Linear()), OnCell())
+        
+        for xu = 1:cols, yu = 1:rows
+            (xd, yd) = distortedcoords(xu, yu, f, ppx, ppy, k1, k2, k3, p1, p2)
+
+            if xd >= 1 && xd <= cols && yd >= 1 && yd <= rows
+                nimg[yu, xu, chan] = itp[yd, xd]
+            end
+        end
+    end
+    
+    return nimg
+end
+
+# Unexported function used by undistortimage()
+
+function distortedcoords(xu::Real, yu::Real, f::Real, ppx::Real, ppy::Real, 
+                         k1::Real, k2::Real, k3::Real, p1::Real, p2::Real)
+
+    # Convert undistorted x, y values to normalised values with the
+    # origin at the principal point.  Dividing pixel coordinates by
+    # the focal length (defined in pixels) gives us normalised coords
+    # corresponding to z = 1
+    x = (xu-ppx)/f
+    y = (yu-ppy)/f    
+    
+    # Radial lens distortion component
+    r2 = x^2 + y^2                  # Squared normalized radius.
+    dr = k1*r2 + k2*r2^2 + k3*r2^3  # Distortion scaling factor.
+    
+    # Tangential distortion component (Beware of different p1,p2
+    # orderings used in the literature)
+    dtx =    2*p1*x*y      +  p2*(r2 + 2*x^2)
+    dty = p1*(r2 + 2*y^2)  +    2*p2*x*y
+    
+    # Apply the radial and tangential distortion components to x and y
+    x = x + dr*x + dtx
+    y = y + dr*y + dty
+    
+    # Now rescale by f and add the principal point back to get
+    # distorted x and y coordinates.
+    xd = x*f + ppx
+    yd = y*f + ppy
+    
+    return (xd, yd)
+
 end
 
 #--------------------------------------------------------------------------
@@ -1416,7 +1570,8 @@ end
 
 #--------------------------------------------------------------------------
 """
-plotcamera - Plots graphical representation of camera(s) showing pose
+plotcamera - Plots graphical representation of camera(s) showing pose.
+
 ```
 Usage: plotcamera(C, l; col=[0,0,1], plotCamPath=false, fig=1)
 
@@ -1431,6 +1586,7 @@ Keyword Arguments:
                positions. If omitted or empty defaults to false.
          fig - Optional figure number to be used. Defaults to 1.
 ```
+
 The function plots into the current figure a graphical representation of one
 or more cameras showing their pose.  This consists of a rectangular cone,
 with its vertex at the camera centre, indicating the camera's field of view.
