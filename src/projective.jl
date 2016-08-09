@@ -29,7 +29,8 @@ export fundmatrix, affinefundmatrix, fundfromcameras
 export idealimagepts, solvestereopt, undistortimage
 export hline, plotcamera
 
-using PyPlot, Interpolations
+using Interpolations
+using PyPlot
 
 #=
 imTrans.m 
