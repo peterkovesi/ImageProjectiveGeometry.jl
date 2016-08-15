@@ -27,15 +27,15 @@ Cam = Camera(P=[X, Y, Z], Rc_w=Rc_w, fx=f, fy=f, ppx=ppx, ppy=ppy,
           skew=skew, k1=k1, k3=k3, rows=rows, cols=cols)
 
 # ground points
-gpt1 = [0, 0, 0]
-gpt2 = [100, -200, 0]
+gpt1 = [0.0, 0.0, 0.0]
+gpt2 = [100.0, -200.0, 0.0]
 
-(xy, visible) = cameraproject(Cam, [gpt1 gpt2])  # project to image
+(xy, visible) = cameraproject(Cam, [gpt1 gpt2], computevisibility=true)  # project to image
 
 # Then project image points to ground plane to see if we reconstruct them
 # ** Note this does not seem to work with lens distortion
-planeP = [0,0,0]
-planeN = [0,0,1]
+planeP = [0.0,0.0,0.0]
+planeN = [0.0,0.0,1.0]
 planept = imagept2plane(Cam, xy, planeP, planeN)
 @test maximum(abs(planept - [gpt1 gpt2])) < f*tol
 
@@ -128,8 +128,8 @@ Rc_w = (rotx(pi-.1)*roty(-0.1))[1:3,1:3]
 Cam2 = Camera(P=[X+2, Y, Z], Rc_w=Rc_w, fx=f, fy=f, ppx=ppx, ppy=ppy, 
                          rows=rows, cols=cols)
 
-xy1 = cameraproject(Cam1, pts)[1]  # Project points into images
-xy2 = cameraproject(Cam2, pts)[1]
+xy1 = cameraproject(Cam1, pts)  # Project points into images
+xy2 = cameraproject(Cam2, pts)
 
 # Form fundamental matrix from corresponding image points
 F1 = fundmatrix(makehomogeneous(xy1), makehomogeneous(xy2))
