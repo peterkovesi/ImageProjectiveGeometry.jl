@@ -1286,7 +1286,7 @@ function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
     # already distorted coordinates.  The approximation we are making here is to
     # assume that the distortion is locally constant.
     rsqrd = x_d.^2 + y_d.^2
-    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd^3
+    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
     
     # Tangential distortion component, again computed from the already distorted
     # coords.
