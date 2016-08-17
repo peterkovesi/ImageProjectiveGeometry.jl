@@ -18,7 +18,6 @@ julia> Pkg.add("ImageProjectiveGeometry")
 
 ```
 help?> ImageProjectiveGeometry  # Lists a summary of the package functions 
-
 ```
 
 ## Summary

@@ -1542,7 +1542,7 @@ Side effect: PyPlot hold() state will be set to true
 # Using PyPlot
 
 # Case when 2 homogeneous points are supplied
-function hline(p1i::Vector, p2i::Vector, linestyle::ASCIIString="b-")
+function hline(p1i::Vector, p2i::Vector, linestyle::Compat.ASCIIString="b-")
 
     p1 = p1i./p1i[3]    # make sure homogeneous points lie in z=1 plane
     p2 = p2i./p2i[3]
@@ -1552,7 +1552,7 @@ function hline(p1i::Vector, p2i::Vector, linestyle::ASCIIString="b-")
 end
 
 # Case when homogeneous line is supplied
-function hline(li::Vector, linestyle::ASCIIString="b-")
+function hline(li::Vector, linestyle::Compat.ASCIIString="b-")
 
     l = li./li[3]   # ensure line in z = 1 plane (not needed?)
     

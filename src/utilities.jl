@@ -546,7 +546,7 @@ end
 
 #function erode_dilate1d{T<:Real}(f::Array{T,1}, ki::Real, 
 #                           erode_dilate::ASCIIString)
-function erode_dilate1d(f, ki::Real, erode_dilate::ASCIIString)
+function erode_dilate1d(f, ki::Real, erode_dilate::Compat.ASCIIString)
 
  
     if uppercase(erode_dilate) == "ERODE"
@@ -639,12 +639,12 @@ respect to the size of the image, irrespective of the structing element size.
 See also imerode(), erode1d(), dilate1d()
 """
 
-function imdilate{T<:Real, T2<:Integer}(img::Array{T,2}, seType::ASCIIString, 
+function imdilate{T<:Real, T2<:Integer}(img::Array{T,2}, seType::Compat.ASCIIString, 
                                         seSize::Union{Array{T2,1},T2})
     imerode_dilate(img, seType, seSize, "DILATE")
 end
 
-function imdilate{T2<:Integer}(img::BitArray{2}, seType::ASCIIString, 
+function imdilate{T2<:Integer}(img::BitArray{2}, seType::Compat.ASCIIString, 
                                seSize::Union{Array{T2,1},T2})
     imerode_dilate(img, seType, seSize, "DILATE")
 end
@@ -679,12 +679,12 @@ respect to the size of the image, irrespective of the structing element size.
 See also imdilate(), erode1d(), dilate1d()
 """
 
-function imerode{T<:Real, T2<:Integer}(img::Array{T,2}, seType::ASCIIString, 
+function imerode{T<:Real, T2<:Integer}(img::Array{T,2}, seType::Compat.ASCIIString, 
                                        seSize::Union{Array{T2,1},T2})
     imerode_dilate(img, seType, seSize, "ERODE")
 end
 
-function imerode{T2<:Integer}(img::BitArray{2}, seType::ASCIIString, 
+function imerode{T2<:Integer}(img::BitArray{2}, seType::Compat.ASCIIString, 
                  seSize::Union{Array{T2,1},T2})
     imerode_dilate(img, seType, seSize, "ERODE")
 end
@@ -705,7 +705,7 @@ element defined via decomposition into a set of linear dilations.
 =#
 
 #function imdilate{T<:Real}(img::Union{Array{T,2}, BitArray{2}}, seType::ASCIIString, seSize)
-function imerode_dilate(img, seType::ASCIIString, seSize, erode_dilate::ASCIIString)
+function imerode_dilate(img, seType::Compat.ASCIIString, seSize, erode_dilate::Compat.ASCIIString)
 
     if ndims(img) == 3
         error("Image must be binary or greyscale")
@@ -879,7 +879,7 @@ end
 # Inefficient code!
 # April 2016
 
-function imerode_dilate(img, se, erode_dilate::ASCIIString)
+function imerode_dilate(img, se, erode_dilate::Compat.ASCIIString)
 
  
     if uppercase(erode_dilate) == "ERODE"

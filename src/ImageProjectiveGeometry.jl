@@ -141,6 +141,8 @@ Peter Kovesi
 
 """
 module ImageProjectiveGeometry
+using Compat
+import Compat.String
 
 include("projective.jl")
 include("transforms3d.jl")
