@@ -48,7 +48,7 @@ function ray2raydist(p1::Vector, v1::Vector, p2::Vector, v2::Vector)
     
     # Get vector perpendicular to both rays
     n = cross(v1, v2)
-    nnorm = sqrt(n'*n)[1]
+    nnorm = sqrt(vecdot(n,n))
 
     # Check if lines are parallel. If so, form a vector perpendicular to v1
     # that is within the plane formed by the parallel rays.
@@ -57,14 +57,14 @@ function ray2raydist(p1::Vector, v1::Vector, p2::Vector, v2::Vector)
                               # of rays.
         n = cross(v1, n)      # Vector perpendicular to v1 within the plane
                               # formed by the 2 rays.
-        nnorm = sqrt(n'*n)[1]
+        nnorm = sqrt(vecdot(n,n))
 
         if nnorm < eps()      # p1 and p2 must be coincident
-            return  0
+            return  0.0
         end
     end                     
     
-    n = n/nnorm         # Unit vector
+    n /= nnorm         # Unit vector
     
     # The vector joining the two closest points on the rays is:
     #    d*n = p2 + beta*v2 - (p1 + alpha*v1) 
@@ -75,7 +75,7 @@ function ray2raydist(p1::Vector, v1::Vector, p2::Vector, v2::Vector)
     #
     # as n is prependicular to v1 and v2 this reduces to
     #   d = (p2 - p1).n
-    return abs((p2 - p1)'*n)[1]
+    return abs(vecdot((p2 - p1), n))
 end
 
 #--------------------------------------------------------------------------
@@ -108,12 +108,15 @@ In this case we simply choose to subtract/add r1 in the x direction to
 c1 to obtain the 'left' and 'right' solutions.
 """
 
-function circleintersectionpts(c1::Vector, r1::Real, c2::Vector, r2::Real, lr="lr")
+function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr="lr")
+
+    c1 = float(c1i) # Ensure c1 and c2 are floats for type stability
+    c2 = float(c2i)
 
     maxmag = maximum(abs([c1; c2; r1; r2]))  # Maximum value in data input
     tol = (maxmag+1)*eps()              # Tolerance used for deciding whether values are equal
     
-    bv = (c2-c1)         # Baseline vector from c1 to c2
+    bv = c2 - c1         # Baseline vector from c1 to c2
     b = norm(bv)         # The distance between the centres
     
     # Trap case of baseline of zero length.  If r1 == r2 we have a
@@ -137,8 +140,8 @@ function circleintersectionpts(c1::Vector, r1::Real, c2::Vector, r2::Real, lr="l
             
         # Check triangle inequality
         elseif b > (r1+r2) || r1 > (b+r2) || r2 > (b+r1)
-            i1 = []
-            i2 = []
+            i1 = zeros(eltype(c1), 0)
+            i2 = zeros(eltype(c1), 0)
             
         else   # Normal solution
             cosR2 = (b^2 + r1^2 - r2^2)/(2*b*r1)
@@ -232,9 +235,9 @@ function pointinconvexpoly(p::Vector, poly::Array)
     # following vertex, we turn clockwise or anticlockwise
     c = zeros(Int, N)
     for n = 1:N-1
-        c[n] = clockwise(p, poly[:,n], poly[:,n+1])
+        c[n] = clockwise(p, view(poly,:,n), view(poly,:,n+1))
     end
-    c[N] = clockwise(p, poly[:,N], poly[:,1])
+    c[N] = clockwise(p, view(poly,:,N), view(poly,:,1))
     
     # If for every vertex we turn consistently clockwise, or
     # consistently anticlockwise we are inside the polygon.  If for
@@ -258,7 +261,7 @@ end
 # anticlockwise.  Returns +1 for clockwise, -1 for anticlockwise, and 0 for
 # p1, p2, p3 in a straight line.
     
-function clockwise(p1::Vector, p2::Vector, p3::Vector)
+function clockwise(p1::AbstractArray, p2::AbstractArray, p3::AbstractArray)
     
     # Form vectors p1->p2 and p2->p3 with z component = 0, form cross product
     # if the resulting z value is -ve the vectors turn clockwise, if +ve
@@ -370,10 +373,10 @@ function isconvexpoly(poly::Array)
 
     c = zeros(Int, N)
     for n = 1:N-2
-        c[n] = clockwise(poly[:,n], poly[:,n+1], poly[:,n+2])
+        c[n] = clockwise(view(poly,:,n), view(poly,:,n+1), view(poly,:,n+2))
     end
-    c[N-1] = clockwise(poly[:,N-1], poly[:,N], poly[:,1])
-    c[N] = clockwise(poly[:,N], poly[:,1], poly[:,2])
+    c[N-1] = clockwise(view(poly,:,N-1), view(poly,:,N), view(poly,:,1))
+    c[N] = clockwise(view(poly,:,N), view(poly,:,1), view(poly,:,2))
 
     if all(c .>= 0) || all(c .<= 0)
         return true

@@ -34,7 +34,7 @@ Usage:                cimg = harris(img, sigma=1; k=0.04)
 
 Arguments:   
            img    - Image to be processed.
-                    ::Array{T,2} or ::AbstractImage{T,2} 
+                    ::Array{T,2} or ::ImageMeta{T,2} 
            sigma  - Standard deviation of Gaussian summation window. 
                     Typical values to use might be 1-3. Default is 1.
 
@@ -64,7 +64,7 @@ Returns:
            r      - Row coordinates of corner points.
            c      - Column coordinates of corner points.
 ```
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"] so that it is consistent with
 the coordinates returned in r, c
 
@@ -112,8 +112,8 @@ function  harris{T<:Real}(img::Array{T,2}, sigma::Real=1; k::Real=0.04, args...)
 
 end
 
-# Case for img::AbstractImage 
-function harris{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; k::Real=0.04, args...)
+# Case for img::ImageMeta 
+function harris{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; k::Real=0.04, args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -138,7 +138,7 @@ Usage:                cimg = noble(img, sigma=1)
 
 Arguments:   
            img    - Image to be processed.
-                    ::Array{T,2} or ::AbstractImage{T,2} 
+                    ::Array{T,2} or ::ImageMeta{T,2} 
            sigma  - Standard deviation of Gaussian summation window. 
                     Typical values to use might be 1-3. Default is 1.
 Keyword arguments:
@@ -163,7 +163,7 @@ Returns:
            r      - Row coordinates of corner points.
            c      - Column coordinates of corner points.
 ```
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"] so that it is consistent with
 the coordinates returned in r, c
 
@@ -210,8 +210,8 @@ function  noble{T<:Real}(img::Array{T,2}, sigma::Real=1; args...)
 
 end
 
-# Case for img::AbstractImage 
-function noble{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; args...)
+# Case for img::ImageMeta 
+function noble{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -235,7 +235,7 @@ Usage:               cimg = shi_tomasi(img, sigma=1)
 
 Arguments:   
            img    - Image to be processed.
-                    ::Array{T,2} or ::AbstractImage{T,2} 
+                    ::Array{T,2} or ::ImageMeta{T,2} 
            sigma  - Standard deviation of Gaussian summation window. 
                     Typical values to use might be 1-3. Default is 1.
 Keyword arguments:
@@ -260,7 +260,7 @@ Returns:
            r      - Row coordinates of corner points.
            c      - Column coordinates of corner points.
 ```
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"] so that it is consistent with
 the coordinates returned in r, c
 
@@ -308,8 +308,8 @@ function shi_tomasi{T1<:Real}(img::Array{T1,2}, sigma::Real=1; args...)
 
 end    
 
-# Case for img::AbstractImage 
-function shi_tomasi{T}(img::Images.AbstractImage{T,2}, sigma::Real=1; args...)
+# Case for img::ImageMeta 
+function shi_tomasi{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; args...)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -332,7 +332,7 @@ Usage:      cimg = coherence(img, sigma=1)
 
 Arguments:   
            img    - Image to be processed.
-                    ::Array{T,2} or ::AbstractImage{T,2} 
+                    ::Array{T,2} or ::ImageMeta{T,2} 
            sigma  - Standard deviation of Gaussian summation window. 
                     Typical values to use might be 1-3. Default is 1.
 Returns:
@@ -347,7 +347,7 @@ structure tensor divided by the sum of the eigenvalues, all squared.
 A small value indicates that the eigenvalues are similar in magnitude
 and hence the local structure has a strong 2D component.
 
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"].
 
 See also: structuretensor()
@@ -370,8 +370,8 @@ function coherence{T1<:Real}(img::Array{T1,2}, sigma::Real=1)
 
 end
 
-# Case for img::AbstractImage 
-function coherence{T}(img::Images.AbstractImage{T,2}, sigma::Real=1)
+# Case for img::ImageMeta 
+function coherence{T}(img::Images.ImageMeta{T,2}, sigma::Real=1)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -411,9 +411,9 @@ function structuretensor{T<:Real}(img::Array{T,2}, sigma::Real=1)
 
     # Compute derivatives and elements of the structure tensor.
     (Ix, Iy) = derivative5(fimg, ("x", "y"))
-    Ix2 = Images.imfilter_gaussian(Ix.^2,  [sigma, sigma])
-    Iy2 = Images.imfilter_gaussian(Iy.^2,  [sigma, sigma])    
-    Ixy = Images.imfilter_gaussian(Ix.*Iy, [sigma, sigma])    
+    Ix2 = gaussfilt(Ix.^2,  sigma)
+    Iy2 = gaussfilt(Iy.^2,  sigma)    
+    Ixy = gaussfilt(Ix.*Iy, sigma)    
 
     return Ix2, Iy2, Ixy
 end
@@ -427,7 +427,7 @@ Usage: hdet = hessianfeatures(img, sigma)
 
 Arguments:
             img      - Greyscale image to be processed.
-                       ::Array{T,2} or ::AbstractImage{T,2} 
+                       ::Array{T,2} or ::ImageMeta{T,2} 
             sigma    - Defines smoothing scale.
 
 Returns:    hdet     - Matrix of determinants of Hessian
@@ -446,7 +446,7 @@ For example to get the 100 strongest saddle features in image `img` use:
  > hdet = hessianfeatures(img, 1)      # sigma = 1
  > (r, c) = nonmaxsuppts(-hdet, N=100)
 ```
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"].
 
 See also: harris(), noble(), shi_tomasi(), derivative5(), nonmaxsuppts()
@@ -454,7 +454,7 @@ See also: harris(), noble(), shi_tomasi(), derivative5(), nonmaxsuppts()
 function  hessianfeatures{T<:Real}(img::Array{T,2}, sigma::Real=1)
 
     if sigma > 0    # Convolve with Gaussian at desired sigma
-        Gimg = Images.imfilter_gaussian(img,  [sigma, sigma])
+        Gimg = gaussfilt(img,  sigma)
     else           # No smoothing
         Gimg = img
         sigma = 1  # Needed for normalisation later
@@ -472,8 +472,8 @@ function  hessianfeatures{T<:Real}(img::Array{T,2}, sigma::Real=1)
     return hdet = Lxx.*Lyy - Lxy.^2
 end
 
-# Case for img::AbstractImage 
-function hessianfeatures{T}(img::Images.AbstractImage{T,2}, sigma::Real=1)
+# Case for img::ImageMeta 
+function hessianfeatures{T}(img::Images.ImageMeta{T,2}, sigma::Real=1)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -491,7 +491,7 @@ Usage: (S, So) = fastradial(img, radii, alpha=2, beta=0)
 
 Arguments:
            img   - Image to be analysed
-                   ::Array{T,2} or ::AbstractImage{T,2} 
+                   ::Array{T,2} or ::ImageMeta{T,2} 
            radii - Vector of integer radius values to be processed
                    suggested radii might be [1, 3, 5]
            alpha - Radial strictness parameter.
@@ -512,7 +512,7 @@ what you are seeking to find.
 
 A good algorithm for detecting eyes in face images.
 
-If the input is an AbstractImage cimg will be an AbstractImage with
+If the input is an ImageMeta cimg will be an ImageMeta with
 property spatialorder set to ["y","x"].
 
 Reference:  
@@ -532,7 +532,7 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
         error("radii must be a vector of integers and > 1")
     end
     
-    (rows,cols)=size(img)
+    (rows,cols) = size(img,1,2)
     
     # Compute derivatives in x and y via Farid and Simoncelli's 5 tap
     # derivative filters
@@ -612,8 +612,8 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
     return S, So
 end
 
-# Case for img::AbstractImage 
-function fastradial{T}(img::Images.AbstractImage{T,2}, radii::Vector, alpha::Real=2, beta::Real=0)
+# Case for img::ImageMeta 
+function fastradial{T}(img::Images.ImageMeta{T,2}, radii::Vector, alpha::Real=2, beta::Real=0)
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)

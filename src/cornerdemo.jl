@@ -3,10 +3,8 @@
 
 using ImageProjectiveGeometry
 using PyPlot
-using PerceptualColourMaps
 
-
-img = PyPlot.imread("lena.tif");
+img = PyPlot.imread("../sampleimages/lena.tif");
 figure(10), PyPlot.imshow(img);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
 PyPlot.title("Input image")
@@ -16,18 +14,21 @@ println("Harris corner detector")
 cimg[cimg .< 0] = 0;   # eliminate -ve values
 figure(2), PyPlot.imshow(cimg.^0.25);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Harris corner strength image")
 ImageProjectiveGeometry.keypause()
 
 println("Noble corner detector")
 (cimg, r, c) = ImageProjectiveGeometry.noble(img, 1, radius=2, N=100, subpixel=false, img=img);
 figure(2), PyPlot.imshow(cimg.^0.25);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Noble corner strength image")
 ImageProjectiveGeometry.keypause()
 
 println("Shi-Tomasi corner detector")
 (cimg, r, c) = ImageProjectiveGeometry.shi_tomasi(img, 1, radius=2, N=100, subpixel=false, img=img);
 figure(2), PyPlot.imshow(cimg.^0.25);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Shi-Tomasi corner strength image")
 ImageProjectiveGeometry.keypause()
 
 println("-ve Hessian features")
@@ -35,6 +36,7 @@ hdet = ImageProjectiveGeometry.hessianfeatures(img, 1)
 (r, c) = ImageProjectiveGeometry.nonmaxsuppts(-hdet, N=100, img=img)
 figure(2), PyPlot.imshow(-hdet);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("-ve Hessian image")
 ImageProjectiveGeometry.keypause()
 
 println("+ve Hessian features")
@@ -42,6 +44,7 @@ hdet = ImageProjectiveGeometry.hessianfeatures(img, 1)
 (r, c) = ImageProjectiveGeometry.nonmaxsuppts(+hdet, N=100, img=img)
 figure(2), PyPlot.imshow(hdet);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("+ve Hessian image")
 ImageProjectiveGeometry.keypause()
 
 
@@ -50,6 +53,7 @@ cimg = ImageProjectiveGeometry.coherence(img, 2)
 (r, c) = ImageProjectiveGeometry.nonmaxsuppts(cimg, N=10, img=img)
 figure(2), PyPlot.imshow(cimg);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Coherence image")
 ImageProjectiveGeometry.keypause()
 
 println("Fast radial")
@@ -57,8 +61,10 @@ println("Fast radial")
 (r, c) = ImageProjectiveGeometry.nonmaxsuppts(-S, N=10, img=img)
 figure(2), PyPlot.imshow(-S);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Fast radial image: orientation and gradient magnitude image")
 
 figure(3), PyPlot.imshow(-So);
 PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+PyPlot.title("Fast radial image: orientation only image")
 
 

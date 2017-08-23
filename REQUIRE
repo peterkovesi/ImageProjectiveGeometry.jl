@@ -1,5 +1,5 @@
-julia      0.4
-Images     0.5
+julia      0.5
+Images     0.10
+ImageFiltering   0.1
 PyPlot     2.0
-Interpolations 
-Compat     0.8.7
+Interpolations 0.6 

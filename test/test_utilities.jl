@@ -69,15 +69,15 @@ eimg = imerode(dimg, "rect", [5, 3])
 
 # grey2census
 
-# normalise
+# imgnormalise
 a = rand(5,3)
-an = normalise(a)
+an = imgnormalise(a)
 @test isapprox(minimum(an), 0)
 @test isapprox(maximum(an), 1)
 
 reqmean = 5
 reqvar = 7
-an = normalise(a, reqmean, reqvar)
+an = imgnormalise(a, reqmean, reqvar)
 @test isapprox(mean(an), reqmean)
 @test isapprox(var(an), reqvar)
 

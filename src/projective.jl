@@ -17,15 +17,25 @@ all copies or substantial portions of the Software.
 The Software is provided "as is", without warranty of any kind.
 
 PK February 2016
+   April 2017  Extra functions added, code cleanup.
 
 ---------------------------------------------------------------------=#
 
 export Camera
 export cameraproject, camera2projmatrix, imagept2plane, decomposecamera, rq3
+
+export mapimage2plane!, imagecorners2plane
+export imagept2ray, imagept2ray!
+
 export makehomogeneous, makeinhomogeneous, hnormalise, hnormalise!
+export solveaffine, imgtrans
 export homography1d, homography2d, normalise1dpts, normalise2dpts 
 export skew, hcross
 export fundmatrix, affinefundmatrix, fundfromcameras
+
+export stereorectify, stereorectifytransforms
+export transformedimagebounds
+
 export idealimagepts, solvestereopt, undistortimage
 export hline, plotcamera
 
@@ -38,24 +48,24 @@ imTransD.m
 equalAngleConstraint.m 
 knownAngleConstraint.m 
 lengthRatioConstraint 
-homoTrans 2D homogeneous transformation of points/lines.
 
 =#
 
 #------------------------------------------------------------------------
 """
-Camera - Structure defining parameters of a camera
+Camera - Structure defining parameters of a camera following the Brown 
+         distortion model
 ```
-      fx::Real      # Focal length.
-      fy::Real
-     ppx::Real      # Principal point.
-     ppy::Real
-      k1::Real      # Radial lens distortion parameters.
-      k2::Real
-      k3::Real
-      p1::Real      # Tangential lens distortion parameters.
-      p2::Real
-    skew::Real
+      fx::Float64      # Focal length.
+      fy::Float64
+     ppx::Float64      # Principal point.
+     ppy::Float64
+      k1::Float64      # Radial lens distortion parameters.
+      k2::Float64
+      k3::Float64
+      p1::Float64      # Tangential lens distortion parameters.
+      p2::Float64
+    skew::Float64
     rows::Integer   # Optional, providing rows and columns allows detection
     cols::Integer   # of points being projected out of image bounds.
        P::Array     # Camera position in world coordinates.
@@ -79,27 +89,27 @@ Constructors:
 
       Camera(P)     # Where P is a 3x4 projection matrix.  
                     # In this case only fx, fy, skew, P and Rc_w can be defined, 
-                    # all other parameters are set to 0.
+                    # all other (distortion) parameters are set to 0.
 ```
 
 """
 
-type Camera{T<:AbstractFloat}
-    fx::T           # Focal length.
-    fy::T
-    ppx::T          # Principal point.
-    ppy::T
-    k1::T           # Radial lens distortion.
-    k2::T
-    k3::T
-    p1::T           # Tangential lens distortion.
-    p2::T
-    skew::T
+type Camera
+    fx::Float64           # Focal length.
+    fy::Float64
+    ppx::Float64          # Principal point.
+    ppy::Float64
+    k1::Float64           # Radial lens distortion.
+    k2::Float64
+    k3::Float64
+    p1::Float64           # Tangential lens distortion.
+    p2::Float64
+    skew::Float64
     rows::Int       # Optional, providing rows and columns allows detection
     cols::Int       # of points being projected out of image bounds.
-    P::Vector{T}    # Camera position in world coordinates.
-    Rc_w::Matrix{T} # Rotation matrix defining world orientation with
-                    # respect to the camera frame.
+    P::Vector{Float64}    # Camera position in world coordinates.
+    Rc_w::Array{Float64}  # Rotation matrix defining world orientation with
+                          # respect to the camera frame.
 end
 
 # Keyword-value constructor
@@ -110,36 +120,24 @@ function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0,
     if size(P) != (3,)
         error("Camera position must be a 3x1 array")
     end
-
+    
     if size(Rc_w) != (3,3)
         error("Camera orientation must be a 3x3 rotation matrix")
     end
-
-     # Get the promotion type
-     args = promote(fx,fy,ppx,ppy,k1,k2,k3,p1,p2,skew,P[1],Rc_w[1,1])
-     T = eltype(args)
-
-     return Camera{T}(fx, fy, ppx, ppy, k1, k2, k3, p1, p2, skew, rows, cols, P, Rc_w)
+    
+    return Camera(float(fx), float(fy), float(ppx), float(ppy), 
+                  float(k1), float(k2), float(k3), float(p1), float(p2), 
+                  float(skew), rows, cols, float(P), float(Rc_w))
 end
 
 # Contructor that takes a projection matrix
-function Camera{T<:AbstractFloat}(P::Matrix{T})
+function Camera{T<:AbstractFloat}(P::Array{T})
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
     end
 
     (K, Rc_w, Pc, pp, pv) = decomposecamera(P)
-    fx = K[1,1]
-    fy = K[2,2]
-    skew = K[1,2]
-    k1 = 0.0
-    k2 = 0.0
-    k3 = 0.0
-    p1 = 0.0
-    p2 = 0.0
-    rows = 0
-    cols = 0
-    Camera{T}(fx, fy, pp[1], pp[2], k1, k2, k3, p1, p2, skew, rows, cols, Pc, Rc_w)
+    Camera(fx=K[1,1], fy=K[2,2], ppx=pp[1], ppy=pp[2], skew=K[1,2], P=Pc, Rc_w=Rc_w)
 end
 
 
@@ -174,9 +172,15 @@ function cameraproject(P::Array, pt::Array)
     if size(pt, 1) != 3
         error("Points must be in a 3xN array")
     end
-    
-    xy = P*makehomogeneous(pt)
-    xy = makeinhomogeneous(xy)
+
+    nPts = size(pt,2)
+    xy = zeros(2,nPts)
+
+    for i in 1:nPts
+        s = P[3,1]*pt[1,i] + P[3,2]*pt[2,i] + P[3,3]*pt[3,i] + P[3,4]
+        xy[1,i] = (P[1,1]*pt[1,i] + P[1,2]*pt[2,i] + P[1,3]*pt[3,i] + P[1,4])/s
+        xy[2,i] = (P[2,1]*pt[1,i] + P[2,2]*pt[2,i] + P[2,3]*pt[3,i] + P[2,4])/s
+    end
 
     return xy
 end    
@@ -274,7 +278,7 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
                       (y_p .>= 1.0) & (y_p .<= convert(Float64,C.rows))
         else
             warn("Point visibility requested but Camera structure has no image size data")
-            visible = []
+            visible = Array{Bool}(0)
         end
 
         return xy, visible
@@ -373,13 +377,186 @@ end
 
 # Case when the camera is represented by a projection matrix
 
-function imagept2plane(P::Array, xy::Array, planeP::Vector, planeN::Vector)
+function imagept2plane(Proj::Array, cameraP::Vector, xy::Vector, planeP::Vector, planeN::Vector)
     
-    if size(P) != (3,4) 
+    if size(Proj) != (3,4) 
         error("Projection matrix must be 3 x 4")
     end
 
-    return pt = imagept2plane(Camera(P), xy, planeP, planeN)
+    # Solve for point on the viewing ray closest to the origin via
+    # pseudoinverse of Proj.
+    pt = Proj\[xy[1], xy[2], 1]
+    pt /= pt[4]
+    ray = pt[1:3] - cameraP   # Ray from camera centre to point
+
+    # The point of intersection of the ray with the plane will be 
+    #   pt = cameraP + k*ray    where k is to be determined
+    #
+    # Noting that the vector planeP -> pt will be perpendicular to planeN.
+    # Hence the dot product between these two vectors will be 0.  
+    #  dot((( cameraP + k*ray ) - planeP) , planeN)  = 0
+    # Rearranging this equation allows k to be solved
+    k = (dot(planeP, planeN) - dot(cameraP, planeN)) / dot(ray, planeN)
+
+    return  cameraP + k*ray
+end
+
+
+
+#-------------------------------------------------------------------------------------
+"""
+mapimage2plane - Projects an image onto a plane in 3D
+
+```
+Usage:  mapimage2plane!(mappedimg, rect3Dpts, img, P)
+
+Arguments:  
+       mappedimg - Buffer for storing the resulting projected image. ::Array{Float64,2}
+          rect3D - 3x4 array specifying the 3D coordinates of the four
+                   corners of the image rectangle. Points are ordered 
+                   clockwise from the top-left corner.
+             img - Image to be projected. ::Array{Float64,2}
+               P - 3x4 projection matrix for img.
+
+```
+
+The four 3D points specifying the corners of the rectangle in the
+plane are projected into the image to obtain their corresponding image
+coordinates.  A homography is computed between these points and the
+corner coordinates of the mappedimage buffer.  This is then applied to
+img to project it into mappedimg.
+
+"""
+
+function mapimage2plane!(mappedimg::Array{Float64,2}, rect3Dpts::Array{Float64,2}, 
+                                         img::Array{Float64,2}, P::Array{Float64,2})
+
+    (rows,cols) = size(mappedimg)
+    mappedxy = float( [1    cols  cols   1
+                       1     1    rows  rows
+                       1     1     1     1  ] )
+
+    # Project the 3D corner locations of rectangle to the image
+    if size(rect3Dpts,1) == 3
+        imgxy = P*makehomogeneous(rect3Dpts)
+    elseif size(rect3Dpts,1) == 4  # Assume homogeneous coords supplied
+        imgxy = P*rect3Dpts
+    else
+        error("rect3Dpts must be 3x4 inhomogeneous, or 4x4 homogeneous points")
+    end
+
+    H = homography2d(imgxy, mappedxy)  # Generate homography
+    imtrans!(mappedimg, img, H)        # and apply homography to img.
+
+    return nothing
+end
+
+
+#-------------------------------------------------------------------------------------
+"""
+
+imagecorners2plane - Get the positions of image corners projected onto a plane
+
+"""
+
+function imagecorners2plane(C::Camera, planeP::Vector, planeN::Vector)
+
+    xy = [0  C.cols  C.cols   0
+          0    0     C.rows  C.rows]
+
+    return imagept2plane(C, xy, planeP, planeN)
+end
+
+
+#--------------------------------------------------------------------------
+"""
+imagept2ray! - Compute viewing ray corresponding to an image point
+```
+Usage:  ray = imagept2ray!(ray, C, x, y)
+
+Arguments:  
+       ray - 3-vector to store the result.
+         C - Camera structure, Alternatively
+             C can be a 3x4 camera projection matrix.
+      x, y - Image point  (col,row)
+
+Returns:
+       ray - 3-vector corresponding to the image point
+```
+
+Lens distortion is handled by using the standard lens distortion
+parameters assuming locally that the distortion is constant, computing
+the forward distortion and then subtracting the distortion.
+ 
+See also imagept2ray(), Camera(), cameraproject()
+"""
+#=
+PK May 2015
+=#
+
+function imagept2ray!(ray, C::Camera, x, y)
+
+    # Reverse the projection process as used by cameraproject()
+
+    # Subtract principal point and divide by focal length to get normalised,
+    # distorted image coordinates.  Note skew represents the 2D shearing
+    # coefficient times fx
+    y_d = (y - C.ppy)/C.fy
+    x_d = (x - C.ppx - y_d*C.skew)/C.fx
+
+    # Radial distortion factor.  Here the squared radius is computed from the
+    # already distorted coordinates.  The approximation we are making here is to
+    # assume that the distortion is locally constant.
+    rsqrd = x_d.^2 + y_d.^2
+    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
+    
+    # Tangential distortion component, again computed from the already distorted
+    # coords.
+    dtx = 2*C.p1*x_d.*y_d         + C.p2*(rsqrd + 2*x_d.^2)
+    dty = C.p1*(rsqrd + 2*y_d.^2) + 2*C.p2*x_d.*y_d
+    
+    # Subtract the tangential distortion components and divide by the radial
+    # distortion factor to get an approximation of the undistorted normalised
+    # image coordinates (with no skew)
+    x_n = (x_d - dtx)./r_d
+    y_n = (y_d - dty)./r_d
+
+    # [x_n, y_n, 1] define a set of points at the normalised distance
+    # of z = 1 from the principal point, these define the viewing rays
+    # in terms of the camera frame.  Rotate to get the viewing rays in
+    # the world frame 
+    # ray = C.Rc_w'*ray
+    A_mul_B!(ray, C.Rc_w', [x_n, y_n, 1])
+
+    normalize!(ray)
+    return ray
+end
+
+"""
+imagept2ray - Compute viewing ray corresponding to an image point
+```
+Usage:  ray = imagept2ray(C, x, y)
+
+Arguments:  
+         C - Camera structure, Alternatively
+             C can be a 3x4 camera projection matrix.
+      x, y - Image point  (col,row)
+
+Returns:
+       ray - 3-vector corresponding to the image point
+```
+
+Lens distortion is handled by using the standard lens distortion
+parameters assuming locally that the distortion is constant, computing
+the forward distortion and then subtracting the distortion.
+ 
+See also imagept2ray!(), Camera(), cameraproject()
+"""
+
+function imagept2ray(C, x, y)
+    ray = zeros(3)
+    imagept2ray!(ray, C, x, y)
+    return ray
 end
 
 #--------------------------------------------------------------------------
@@ -402,7 +579,7 @@ function camera2projmatrix(C::Camera)
     
     K = [C.fx  C.skew   C.ppx  0
           0    C.fy     C.ppy  0
-          0     0         1    0]
+          0     0        1     0]
     
     T = [ C.Rc_w  -C.Rc_w*C.P
           0  0  0       1     ]
@@ -470,7 +647,7 @@ function decomposecamera{T1<:Real}(P::Array{T1,2})
     Z =  det([p1 p2 p4])
     T = -det([p1 p2 p3])    
     
-    Pc = [X;Y;Z;T]
+    Pc = [X,Y,Z,T]
     Pc = Pc/Pc[4]
     Pc = Pc[1:3]     # Make inhomogeneous
     
@@ -820,6 +997,45 @@ function homography2d{T<:Real}(x::Array{T,2})
     return homography2d(x[1:3,:], x[4:6,:])
 end
 
+#-------------------------------------------------------------------------------
+"""
+solveaffine
+```
+Usage: A = solveaffine(xy1, xy2)
+
+Solve affine transformation between two sets of 2D points
+
+[ x2        [ a  b  c    [ x1
+  y2    =     d  e  f      y1
+   1 ]        0  0  1 ]     1 ]
+
+```
+"""
+
+function solveaffine(xy1, xy2)
+
+    if size(xy1) != size(xy2)
+        error("inputs point sets must be equal in size")
+    end
+
+    (dim, npts) = size(xy1)
+    X = zeros(2*npts,6)
+
+    for n = 1:npts
+        X[2*n-1,:] = [xy1[1,n] xy1[2,n]  1    0        0     0]
+        X[2*n  ,:] = [   0        0      0 xy1[1,n] xy1[2,n] 1]
+    end
+
+    a = X \ xy2[:]
+
+    A = [ a[1] a[2] a[3]
+          a[4] a[5] a[6]
+           0    0    1  ]
+
+    return A
+end
+
+
 #---------------------------------------------------------------------------
 """
 normalise1dpts - Normalises 1D homogeneous points
@@ -831,7 +1047,7 @@ the origin is 1.
 Usage:   (newpts, T) = normalise1dpts(pts)
 
 Argument:
-  pts -  2xN array of 2D homogeneous coordinates
+  pts -  2xN array of 1D homogeneous coordinates
 
 Returns:
   newpts -  2xN array of transformed 1D homogeneous coordinates
@@ -848,7 +1064,7 @@ See also: normalise2dpts()
 
 function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
 
-    pts = copy(ptsa) # Copy because we alter ptsa (should be able to fix this)
+    pts = copy(ptsa) 
 
     if size(pts,1) != 2
         error("pts must be 2xN")
@@ -860,21 +1076,21 @@ function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
     end
     
     # Ensure homogeneous coords have scale of 1
-    pts[1,:] = pts[1,:]./pts[2,:]
+    hnormalise!(pts)
     
-    c = mean(pts[1,:])        # Centroid.
-    newp = pts[1,:] - c       # Shift origin to centroid.
-    
-    meandist = mean(abs(newp))
+    # Get centroid and mean distance from centroid
+    c = mean(view(pts, 1,:))  
+    meandist = mean(abs.(pts[1,:] - c))
     scale = 1/meandist
     
     T = [scale    -scale*c
          0         1      ]
     
-    newpts = T*pts
+    pts = T*pts
 
-    return newpts, T
+    return pts, T
 end
+
 
 #---------------------------------------------------------------------------
 """
@@ -963,9 +1179,9 @@ function skew{T<:Real}(v::Array{T})
     
     @assert length(v) == 3  "Input must be a 3x1 array or vector"
     
-    s = [ 0.  -v[3]  v[2]
-         v[3]   0.  -v[1]
-        -v[2]  v[1]   0. ]
+    s = [ zero(T)  -v[3]    v[2]
+           v[3]   zero(T)  -v[1]
+          -v[2]     v[1]   zero(T) ]
 end
 
 #------------------------------------------------------------------------
@@ -978,14 +1194,14 @@ in the scale = 1 plane.
 ``` 
 Usage: c = hcross(a,b)
 
-Arguments:  a, b  - 3x1 arrays or vectors
+Arguments:  a, b  - 3-vectors
 Returns:       c  - 3-vector
 ```
 """
 function hcross{T1<:Real, T2<:Real}(a::Array{T1}, b::Array{T2})
-    @assert length(a) == 3 && length(b) == 3  "Input must be a 3x1 arrays or vectors"
-    c = cross(vec(a), vec(b))
-    c = c/c[3]
+    @assert length(a) == 3 && length(b) == 3  "Input must be a 3-vectors"
+    c = cross(a, b)
+    c /= c[3]
 end
 
 #------------------------------------------------------------------------
@@ -1048,7 +1264,7 @@ function  fundmatrix{T1<:Real,T2<:Real}(x1i::Array{T1,2}, x2i::Array{T2,2}; epip
     (x2, Tx2) = normalise2dpts(x2i)
     
     # Build the constraint matrix
-    # The following hopefully works for both v0.4 and v0.5
+    # The following cumbersome construction hopefully works for both v0.4 and v0.5
     A = [x2[1:1,:]'.*x1[1:1,:]'   x2[1:1,:]'.*x1[2:2,:]'  x2[1:1,:]'  x2[2:2,:]'.*x1[1:1,:]'   x2[2:2,:]'.*x1[2:2,:]'  x2[2:2,:]'   x1[1:1,:]'   x1[2:2,:]'  ones(npts,1) ]
 
     # Build A transposed so that we can format it in code, and then transpose it
@@ -1227,7 +1443,7 @@ function fundfromcameras{T1<:Real, T2<:Real}(P1::Array{T1,2}, P2::Array{T2,2})
     C1 = nullspace(P1)  # Camera centre 1 is the null space of P1
     e2 = P2*C1          # epipole in camera 2
     
-    e2x = [  0   -e2[3] e2[2]    # Skew symmetric matrix from e2
+    e2x = [   0   -e2[3] e2[2]    # Skew symmetric matrix from e2
             e2[3]    0  -e2[1]
            -e2[2]  e2[1]   0  ]
     
@@ -1239,6 +1455,364 @@ function fundfromcameras(C1::Camera, C2::Camera)
     return fundfromcameras(camera2projmatrix(C1), camera2projmatrix(C2))
 end
     
+
+
+#------------------------------------------------------------------------------
+"""
+stereorectify - Rectify a stereo pair of images
+
+```
+Usage: (P1r, img1r, H1, P2r, img2r, H2, dmin, dmax, dmed) = ...
+                    stereorectify(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0), 
+                     scale=1.0, disparitytruncation=0, diagnostics=false)
+
+Arguments:
+          P1, P2 - Projection matrices of the images to be rectified.
+      img1, img2 - The two images (assumed same size).
+         xy1,xy2 - Optional: Two sets of corresponding homogeneous image
+                   coordinates in the images [3 x N] in size.  If supplied
+                   these are used to construct a rectification that seeks
+                   to minimise the relative displacement between the
+                   rectified image points. 
+Keyword arguments:
+                scale - The desired scaling of the image, defaults to 1.0
+  disparitytruncation - The percentage to be clipped off the ends of the histogram 
+                        of image coordiante disparities for the determination of 
+                        the disparity range.
+          diagnostics - If true diagnostic plots are generated and disparity range 
+                        printed on screen
+
+Returns:
+        P1r, P2r - The projection matrices of the rectified images.
+    img1r, img2r - The rectified images.
+          H1, H2 - Homographies that were applied to img1 and img2 to obtain
+                   img1r, img2r.
+      dmin, dmax - The range of disparities between the images derived from
+                   the rectified image coordinates (if supplied). 
+            dmed - Median of disparities.
+```
+
+Note the value of supplying xy1 and xy2 is that the local spatial
+arrangement of pixels at any matching point between images is likely
+to be more similar and hence image descriptors are likely to work
+better.  Also, the disparity ranges between the images will be kept as
+uniform as possible.
+
+The range of disparities is derived from a histogram of the
+disparities between the supplied image coordinates with a specified
+truncation applied to the ends of the histograms to exclude outliers.
+"""
+#=
+Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
+
+Peter Kovesi
+peterkovesi.com
+
+May 2016
+July 2016 Ported to Julia
+=#
+
+function stereorectify(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0); 
+                       scale::Real=1.0, disparitytruncation::Real=0.0, diagnostics::Bool=false)
+    
+    # Get the transformations required to perform stereorectification
+    (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1, P2, img2, 
+                                   xy1, xy2, scale=scale, disparitytruncation=disparitytruncation)
+
+    # Apply homographies to obtaoin rectified images.
+    img1r = imtrans(img1, H1)  
+    img2r = imtrans(img2, H2)
+
+    if diagnostics
+        figure(21); clf()
+        imshow(img1r, cmap=ColorMap("gray"))
+        figure(22); clf()
+        imshow(img2r, cmap=ColorMap("gray"))
+    
+        # Draw some horizontal lines on the rectified images to allow diagnostic
+        # checks
+        rows = max(size(img1r,1), size(img2r,1))
+        cols = max(size(img1r,2), size(img2r,2))
+        for fig = [21, 22]
+            figure(fig)
+#            hold(true)
+            for y = 250:250:rows
+                plot([0, cols], [y, y], "r-")
+            end
+#            hold(false)
+        end
+        
+        if !isempty(xy1) && !isempty(xy2)  # We have affine correction data
+            # Apply rectification transforms to the image points to determine the range
+            # of disparities in the x direction and to check that there are no serious
+            # shifts in the y direction.
+            H1xy1 = hnormalise(H1*xy1)
+            H2xy2 = hnormalise(H2*xy2)
+            
+
+            # Generate histogram of y disparities, should be almost zero
+            ydisparity = vec(H2xy2[2,:] - H1xy1[2,:])
+            plothistogram(ydisparity, linspace(minimum(ydisparity), maximum(ydisparity), 50),
+                          fig = 23, title = "Y Disparities of rectified measurement points")
+            @printf("Y disparity: mean %f   std dev %f\n", mean(ydisparity), std(ydisparity))
+            
+            @printf("Min, max and median disparity of 2nd image wrt to first is %d,  %d,  %d\n", 
+                    dmin, dmax, dmed)
+            
+            # Plot rectified tiepoint image positions on rectified images
+            #            figure(21), hold on
+            #            plot(H1xy1[1,:], H1xy1[2,:], "r+"); hold off
+            #            figure(22), hold on
+            #            plot(H2xy2[1,:], H2xy2[2,:], "r+"); hold off
+        end
+    end
+
+    return (P1r, img1r, H1, P2r, img2r, H2, dmin, dmax, dmed)
+end
+
+#-----------------------------------------------------------------------------
+
+"""
+stereorectifytransforms
+
+Compute homographies that transform an image pair into a stereorectified pair
+
+```
+Usage:  (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1, P2, img2, 
+                                   xy1=zeros(0), xy2=zeros(0); scale=1.0, disparitytruncation=0)
+
+Arguments:
+          P1, P2 - Projection matrices of the images to be rectified.
+      img1, img2 - The two images (assumed same size).
+         xy1,xy2 - Optional: Two sets of corresponding homogeneous image
+                   coordinates in the images [3 x N] in size.  If supplied
+                   these are used to construct a rectification that seeks
+                   to minimise the relative displacement between the
+                   rectified image points. 
+Keyword argument:
+                scale - The desired scaling of the image, defaults to 1.0
+  disparitytruncation - The percentage to be clipped off the ends of the histogram 
+                        of image coordiante disparities for the determination of 
+                        the disparity range.
+
+Returns:
+        P1r, P2r - The projection matrices of the rectified images.
+          H1, H2 - Homographies that should be applied to img1 and img2 to 
+                   obtain a stereorectifed pair
+      dmin, dmax - The range of disparities between the images derived from
+                   the rectified image coordinates (if supplied). 
+            dmed - Median of disparities.
+```
+
+Note the value of supplying xy1 and xy2 is that the local spatial
+arrangement of pixels at any matching point between images is likely
+to be more similar and hence image descriptors are likely to work
+better.  Also, the disparity ranges between the images will be kept as
+uniform as possible.
+
+The range of disparities is derived from a histogram of the
+disparities between the supplied image coordinates with a specified
+truncation applied to the ends of the histograms to exclude outliers.
+"""
+
+# Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
+
+function stereorectifytransforms(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0); 
+                                 scale::Real=1.0, disparitytruncation::Real=0.0)
+    
+    AFFINECORRECT = !isempty(xy1) && !isempty(xy2)
+    
+    (rows1, cols1, chan) = size(img1, 1, 2, 3)
+    
+    # Get Fundamental matrix and epipoles
+    # F *e1 = 0
+    # F'*e2 = 0
+    F = fundfromcameras(P1, P2)
+    (U,D,V) = svd(F)    
+    e1 = hnormalise(V[:,3])
+    e2 = hnormalise(U[:,3])
+    
+    # First build the transform that is applied to image1 
+    
+    # Tranform that takes centre of image to origin
+    T = [1.0   0.0 -cols1/2
+         0.0   1.0 -rows1/2
+         0.0   0.0   1.0   ]
+    
+    # Rotation that takes epipole to [f,0,1] 
+    Te1 = T*e1                    # Location of epipole after translation.
+    Te1 = Te1[1:2]/norm(Te1[1:2]) # Unit direction vetor.
+
+    R = [ Te1[1]  Te1[2]  0.0
+         -Te1[2]  Te1[1]  0.0
+           0.0     0.0    1.0]
+    
+    # Location of epipole after applying T and R.  Position will be of the
+    # form [f,0,1]
+    RTe1 = hnormalise(R*T*e1)
+    f = RTe1[1]
+    
+    # Tranform that maps rotated epipole [f,0,1] to infinity at [f,0,0]
+    G = [ 1.0   0.0   0.0
+          0.0   1.0   0.0
+         -1/f   0.0   1.0]
+    
+    H1 = G*R*T     # Transformation to be applied to image 1.
+    
+    # We now need to find a matching transformation H2 that maps epipolar lines
+    # in image 2 so that they match up with the epipolar lines in image 1.
+    # Additionally we want H2 such that the displacement of corresponding
+    # image points in rectified images 1 and 2 is minimised.
+    
+    # H2 is of the form Ha*Ho .
+    # Where: Ho = H1*M ,  M is the transfer plane such that F = skew(e1)*M
+    # and Ha is an affine matrix of the form [a b c; 0 1 0; 0 0 1].  This
+    # attempts to scale, shear and offset the image in the x direction so
+    # that corresponding image points have minimal displacement.
+    M = P1*pinv(P2)
+    Ho = H1*M
+    
+    if AFFINECORRECT     # Solve for a, b, c in Ha such that corresponding
+                         # point displacements are minimised. 
+        H1xy1 = hnormalise(H1*xy1)   # Rectified points in image 1
+        Hoxy2 = hnormalise(Ho*xy2)   # Image 2 points rectified by Ho
+        abc = Hoxy2'\H1xy1[1:1,:]'
+        H2 = [abc'; 0.0 1.0 0.0; 0.0 0.0 1.0]*Ho
+    else
+        H2 = Ho
+    end
+
+    # Scale the transforms to required value
+    S = [scale 0 0; 0 scale 0; 0 0 1]
+    H1 = S * H1
+    H2 = S * H2
+    
+    if AFFINECORRECT
+        # Apply rectification transforms to the image points to
+        # determine the range of disparities in the x direction and to
+        # check that there are no serious shifts in the y direction.
+        H1xy1 = hnormalise(H1*xy1)
+        H2xy2 = hnormalise(H2*xy2)
+        
+        # Get min and max row and column coords of the transformed
+        # image points and cut the images down to the minimum size
+        # that covers the shared region
+        minx1 = minimum(H1xy1[1,:])
+        maxx1 = maximum(H1xy1[1,:])
+        miny1 = minimum(H1xy1[2,:])
+        maxy1 = maximum(H1xy1[2,:])
+
+        minx2 = minimum(H2xy2[1,:])
+        maxx2 = maximum(H2xy2[1,:])
+        miny2 = minimum(H2xy2[2,:])
+        maxy2 = maximum(H2xy2[2,:])
+
+        # Note the range in y must be common to both images
+        miny = max(miny1, miny2)
+        maxy = min(maxy1, maxy2)
+
+    else
+        # Apply a final translation adjustment to both transforms so that the final
+        # rectified images do not end up with -ve pixel coordinates.  We do this by
+        # determining the bounds of both images with the existing rectification and
+        # applying a translation so that we end up with non-negative pixel
+        # coordinates.  Note that the y translation must be common to both
+        # images.  Also, we want the minimum x and y coordinates to be 1, not zero.
+        (minx1, maxx1, miny1, maxy1) = transformedimagebounds(img1, H1)
+        (minx2, maxx2, miny2, maxy2) = transformedimagebounds(img2, H2)
+        #    miny = min(miny1, miny2)
+        
+        # Set  miny to be the top of the common area
+        miny = max(miny1, miny2)
+    end
+
+    T1 = [1.0  0.0  -minx1+1
+          0.0  1.0  -miny+1
+          0.0  0.0    1.0   ]
+    
+    T2 = [1.0  0.0  -minx2+1
+          0.0  1.0  -miny+1
+          0.0  0.0    1.0   ]   
+    
+    H1 = T1*H1                  # Final rectification transforms.
+    H2 = T2*H2
+
+    P1r = H1*P1                 # Adjusted projection matrices.
+    P2r = H2*P2
+
+
+    if AFFINECORRECT
+        # Apply rectification transforms to the image points to
+        # determine the range of disparities in the x direction and to
+        # check that there are no serious shifts in the y direction.
+        H1xy1 = hnormalise(H1*xy1)
+        H2xy2 = hnormalise(H2*xy2)
+        
+        # Truncate specfied percentage off the ends of the histogram
+        # of x disparity values to eliminate outliers and establish a
+        # range of disparities that need to be searched for 3D
+        # reconstruction.
+        disparities = H2xy2[1,:] - H1xy1[1,:]
+        h = histtruncate(disparities, disparitytruncation)  
+        dmin = floor(Int, minimum(h))            
+        dmax = ceil(Int, maximum(h))
+        dmed = round(Int, median(disparities))
+        
+    else
+        dmin = zeros(Int,0); dmax= zeros(Int,0); dmed=zeros(Int,0);
+    end
+
+    return (P1r, H1, P2r, H2, dmin, dmax, dmed)
+end
+
+
+
+#---------------------------------------------------------------------
+"""
+transformedimagebounds
+
+Find where the corners of an image are transformed to by transform H and
+return the bounds.
+
+```
+Usage:  (minx, maxx, miny, maxy) = transformedimagebounds(img::Array, H::Array)
+        (minx, maxx, miny, maxy) = transformedimagebounds(sze::Tuple, H::Array)
+
+Arguments:   img - An array storing the image or
+             sze - A tuple as returned by size() giving the size of the image.
+               H - The transforming homography, a 3x3 matrix.
+
+Returns: 
+      minx, maxx - The range of x, y coords (range of column and row coords) of 
+      miny, maxy   the transformed image.
+
+```
+
+"""
+
+function  transformedimagebounds(img, H)    
+    transformedimagebounds(size(img), H)
+end
+
+function  transformedimagebounds(sze::Tuple, H::Array)
+
+    rows, cols = sze[1], sze[2]
+
+    # Image corners
+    xy = [1  cols cols   1
+          1   1   rows  rows
+          1   1    1     1   ]
+    
+    # Transformed image corners
+    Hxy = hnormalise(H*xy)
+
+    minx = minimum(Hxy[1,:]); maxx = maximum(Hxy[1,:])
+    miny = minimum(Hxy[2,:]); maxy = maximum(Hxy[2,:])
+
+    return (minx, maxx, miny, maxy)
+end
+
+
 #----------------------------------------------------------------------
 """
 idealimagepts - Ideal image points with no distortion.
@@ -1536,23 +2110,22 @@ argument the extent of the line drawn depends on the current axis
 limits.  This will require you to set the desired limits with a call
 to PyPlot.axis() prior to calling this function.
 
-Side effect: PyPlot hold() state will be set to true
 """
 
 # Using PyPlot
 
 # Case when 2 homogeneous points are supplied
-function hline(p1i::Vector, p2i::Vector, linestyle::Compat.ASCIIString="b-")
+function hline(p1i::Vector, p2i::Vector, linestyle::String="b-")
 
     p1 = p1i./p1i[3]    # make sure homogeneous points lie in z=1 plane
     p2 = p2i./p2i[3]
 
-    hold(true)    
+#    hold(true)    
     plot([p1[1], p2[1]], [p1[2], p2[2]], linestyle);
 end
 
 # Case when homogeneous line is supplied
-function hline(li::Vector, linestyle::Compat.ASCIIString="b-")
+function hline(li::Vector, linestyle::String="b-")
 
     l = li./li[3]   # ensure line in z = 1 plane (not needed?)
     
@@ -1565,7 +2138,7 @@ function hline(li::Vector, linestyle::Compat.ASCIIString="b-")
         p2 = hcross(l, [-1, 0, PyPlot.xlim()[2]])
     end
 
-    hold(true)
+#    hold(true)
     plot([p1[1], p2[1]], [p1[2], p2[2]], linestyle);
 end
 
@@ -1574,7 +2147,7 @@ end
 plotcamera - Plots graphical representation of camera(s) showing pose.
 
 ```
-Usage: plotcamera(C, l; col=[0,0,1], plotCamPath=false, fig=1)
+Usage: plotcamera(C, l; col=[0,0,1], plotCamPath=false, fig=nothing)
 
 Arguments:
            C - Camera structure (or array of Camera structures)
@@ -1585,7 +2158,8 @@ Keyword Arguments:
                use. Defaults to blue.
  plotCamPath - Optional flag true/false to plot line joining camera centre
                positions. If omitted or empty defaults to false.
-         fig - Optional figure number to be used. Defaults to 1.
+         fig - Optional figure number to be used. If not specified a new 
+               figure is created.
 ```
 
 The function plots into the current figure a graphical representation of one
@@ -1596,7 +2170,7 @@ The camera's coordinate X and Y axes are also plotted at the camera centre.
 See also: Camera
 """
 
-function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=1)
+function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     
     if isa(Ci, Array)
         C = Ci
@@ -1606,7 +2180,7 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=1)
     end
 
     figure(fig)
-    hold(true)
+#    hold(true)
     for i = 1:length(C)
         
         if C[i].rows == 0 || C[i].cols == 0
@@ -1668,3 +2242,189 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=1)
     end
 
 end
+
+
+
+#---------------------------------------------------------------------
+"""
+imgtrans - Homogeneous transformation of an image - no image scaling
+
+```
+Applies a geometric transform to an image
+
+Usage: newimg = imgtrans(img, T)
+
+Arguments: 
+       img    - The image to be transformed.
+       T      - The 3x3 homogeneous transformation matrix.
+
+Returns:
+      newimg  - The transformed image.
+```
+
+"""
+
+#=
+Peter Kovesi
+peterkovesi.com
+
+April 2000 - original version.
+July  2001 - transformation of region boundaries corrected.
+May   2016 - Minor tidying, no image scaling
+July 2016  - Ported to Julia
+=#
+
+# ** To do: Add options to allow/disallow rescaling translating etc
+# If rescaling and translating occur then the new homography should be returned.
+
+# Version for image represented by 3D array 
+function imgtrans{T}(img::Array{T,3}, H::Array{Float64,2})
+    
+    (rows, cols, channels) = size(img)
+    invH = inv(H)
+    
+    # Determine where the corners of the image go
+    (minx::Float64, maxx::Float64, miny::Float64, maxy::Float64) = transformedimagebounds(img, H)
+    
+#=
+    if minx < 0.5 || miny < 0.5  # Allow 1/2 pixel 'slop'
+        @printf("Warning: Part of the transformed image has coordinates < 1\n")
+        @printf("minx %f maxx %f miny %f maxy %f\n", minx, maxx, miny, maxy)
+    end
+=#
+    nrows = ceil(Int, maxy)
+    ncols = ceil(Int, maxx)
+
+    newimg = zeros(Float64, nrows, ncols, channels)
+    Hxy = zeros(3)
+
+    for chan = 1:channels
+        # Set up interpolant Seems to be faster to repeat the loops
+        # for each channel than it is to slice down through the
+        # channels
+        itp = interpolate(img[:,:,chan], BSpline(Linear()), OnCell())
+        
+        for c = 1:ncols, r = 1:nrows
+            #  Hxy = invH*[c,r,1]  # The following is _much_ faster
+            Hxy[1] = invH[1,1]*c + invH[1,2]*r + invH[1,3]
+            Hxy[2] = invH[2,1]*c + invH[2,2]*r + invH[2,3]
+            Hxy[3] = invH[3,1]*c + invH[3,2]*r + invH[3,3]
+            x = Hxy[1]/Hxy[3]
+            y = Hxy[2]/Hxy[3]
+            if x >=1 && x <= cols && y >=1 && y <= rows
+               newimg[r,c, chan] = itp[y,x]
+            end
+        end
+    end
+    
+    return newimg
+end
+
+# Version for image represented by 2D array 
+function imgtrans{T}(img::Array{T,2}, H::Array{Float64,2})
+    
+    (rows,cols) = size(img)
+    invH = inv(H)
+    
+    # Determine where the corners of the image go
+    (minx::Float64, maxx::Float64, miny::Float64, maxy::Float64) = transformedimagebounds(img, H)
+
+#=    
+    if minx < 0.5 || miny < 0.5   # Allow 1/2 pixel 'slop'
+        @printf("Warning: Part of the image has transformed coordinates < 1\n")
+        @printf("minx %f maxx %f miny %f maxy %f\n", minx, maxx, miny, maxy)
+    end
+=#
+    nrows = ceil(Int, maxy)
+    ncols = ceil(Int, maxx)
+    
+    newimg = zeros(Float64, nrows, ncols)
+    
+    # Set up interpolant
+    itp = interpolate(img, BSpline(Linear()), OnCell())
+    Hxy = zeros(3)
+
+    for c = 1:ncols, r = 1:nrows
+#        Hxy = invH*[c,r,1]  # The following is _much_ faster
+        Hxy[1] = invH[1,1]*c + invH[1,2]*r + invH[1,3]
+        Hxy[2] = invH[2,1]*c + invH[2,2]*r + invH[2,3]
+        Hxy[3] = invH[3,1]*c + invH[3,2]*r + invH[3,3]
+
+        x = Hxy[1]/Hxy[3]
+        y = Hxy[2]/Hxy[3]
+
+        if x >=1 && x <= cols && y >=1 && y <= rows
+            newimg[r,c] = itp[y,x]
+        end
+    end
+    
+    return newimg
+end
+
+
+# Version for image represented by 2D array inplace
+function imgtrans!{T}(newimg::Array{T,2}, img::Array{T,2}, H::Array{Float64,2})
+    
+    (rows,cols) = size(img)
+    invH = inv(H)
+    
+    (nrows, ncols) = size(newimg)
+    
+    # Set up interpolant
+    itp = interpolate(img, BSpline(Linear()), OnCell())
+    Hxy = zeros(3)
+
+    for c = 1:ncols, r = 1:nrows
+#        Hxy = invH*[c,r,1]  # The following is _much_ faster
+        Hxy[1] = invH[1,1]*c + invH[1,2]*r + invH[1,3]
+        Hxy[2] = invH[2,1]*c + invH[2,2]*r + invH[2,3]
+        Hxy[3] = invH[3,1]*c + invH[3,2]*r + invH[3,3]
+
+        x = Hxy[1]/Hxy[3]
+        y = Hxy[2]/Hxy[3]
+
+        if x >=1 && x <= cols && y >=1 && y <= rows
+            newimg[r,c] = itp[y,x]
+        else
+            newimg[r,c] = zero(T)
+        end
+    end
+    
+    return nothing
+end
+
+
+
+
+#=
+# Images.Image version  *** Have to sort out rows cols order !!! ***
+function imgtrans(img::Images.Image, H::Array)
+    
+    (rows,cols) = size(img)
+
+    invH = inv(H)
+    
+    # Determine where the corners of the image go
+    (minx, maxx, miny, maxy) = transformedimagebounds(img, H)
+    
+    if minx < 1 || miny < 1
+        @printf("Warning: Part of the image has transformed coordinates < 1\n")
+    end
+
+    nrows = ceil(Int, maxy)
+    ncols = ceil(Int, maxx)
+    
+    # Need to construct a zero image of same size and type as img
+    newimg = zeros(Float64, nrows, ncols)
+    
+    # Set up interpolant
+    itp = interpolate(img, BSpline(Linear()), OnCell())
+    
+    for c = 1:ncols, r = 1:nrows
+        Hxy = invH*[c,r,1]
+        newimg[r,c] = itp[Hxy[2]/Hxy[3], Hxy[1]/Hxy[3]]
+    end
+    
+    return newimg
+end
+=#

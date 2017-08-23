@@ -104,7 +104,7 @@ function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     figure(1); clf()
     outliers = setdiff(1:npts, inliers)
     plot3D(vec(XYZ[1,outliers]), vec(XYZ[2, outliers]), vec(XYZ[3, outliers]), "r*")
-    hold(true)
+#    hold(true)
 
     # Plot the inliers as blue points
     plot3D(vec(XYZ[1,inliers]), vec(XYZ[2, inliers]), vec(XYZ[3, inliers]), "b*")
@@ -116,7 +116,7 @@ function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     #Display the line formed by the covariance fitting in magenta
     plot3D(vec(V[1,:]), vec(V[2, :]), vec(V[3,:]), "m-", linewidth=4)
     box("on"), grid("on")
-    hold(false)
+#    hold(false)
     
 end    
 #-----------------------------------------------------------------------
@@ -184,7 +184,7 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     XYZ[:,ind] = XYZ[:,ind]  +   sign(rand(3,opts)-.5).*(rand(3,opts)+1)*outsigma    
     
     # Display the cloud of points (vec() needed for 0.4)
-    figure(1), clf, plot3D(vec(XYZ[1,:]),vec(XYZ[2,:]),vec(XYZ[3,:]), "r*")
+    figure(1); clf(); plot3D(vec(XYZ[1,:]),vec(XYZ[2,:]),vec(XYZ[3,:]), "r*")
     box("on")
     
     # Perform RANSAC fitting of the plane
@@ -198,10 +198,10 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
 
     # Display the triangular patch formed by the 3 points that gave the
     # plane of maximum consensus
-    hold(true)
+#    hold(true)
     pts = [P P[:,1]]'
     plot3D(pts[:,1], pts[:,2], pts[:,3], "k-")
-    hold(false)
+#    hold(false)
     
     @printf("\nRotate image so that the triangular patch is seen edge on\n")
     @printf("These are the points that form the plane of max consensus.\n\n")
@@ -249,13 +249,13 @@ function fitfunddemo(img1=[], img2=[])
     (m1,m2) = matchbycorrelation(img1, [r1';c1'], img2, [r2';c2'], w, dmax)
     
     # Display putative matches
-    figure(3);  imshow(img1);  hold(true)
+    figure(3); clf(); imshow(img1);  # hold(true)
     nMatch = size(m1,2)
     for n = 1:nMatch
 	plot([m1[2,n], m2[2,n]], [m1[1,n], m2[1,n]],"r-")
     end
     title("Putative matches")
-    hold(false)
+#    hold(false)
 
     # Assemble homogeneous feature coordinates for fitting of the
     # fundamental matrix, note that [x,y] corresponds to [col, row]
@@ -275,14 +275,14 @@ function fitfunddemo(img1=[], img2=[])
     @printf("Number of putative matches was %d \n", nMatch)
     
     # Display both images overlayed with inlying matched feature points
-    figure(4);  imshow(img1);  hold(true)
+    figure(4); clf();  imshow(img1);  # hold(true)
     plot(m1[2,inliers], m1[1,inliers],"r+")
     plot(m2[2,inliers], m2[1,inliers],"g+")    
     for n = inliers
 	plot([m1[2,n], m2[2,n]], [m1[1,n], m2[1,n]], "b-")
     end
     title("Inlying matches")
-    hold(false)
+#    hold(false)
 
     @printf("Step through each epipolar line [y/n]?\n")
     response = readline()
@@ -303,18 +303,19 @@ function fitfunddemo(img1=[], img2=[])
     for n = inliers
 	figure(1); clf(); imshow(img1)
         axis([1,cols1,rows1,1])
-        hold(true)
+#        hold(true)
         plot(x1[1,n],x1[2,n],"r+",markersize=8)
 	hline(l1[:,n]);
         plot(e1[1], e1[2], "g*"); 
-        hold(false)
+#        hold(false)
 
 	figure(2); clf(); imshow(img2); 
         axis([1,cols2,rows2,1])
-        hold(true); plot(x2[1,n],x2[2,n],"r+",markersize=8)
+ #       hold(true); 
+        plot(x2[1,n],x2[2,n],"r+",markersize=8)
 	hline(l2[:,n]); 
         plot(e2[1], e2[2], "g*")
-        hold(false)
+#        hold(false)
 	keypause()
     end
 
@@ -359,13 +360,13 @@ function fithomogdemo(img1=[], img2=[])
     (m1,m2) = matchbycorrelation(img1, [r1';c1'], img2, [r2';c2'], w, dmax)
 
     # Display putative matches
-    figure(3);  imshow(img1);  hold(true)
+    figure(3); clf();  imshow(img1);  # hold(true)
     nMatch = size(m1,2)
     for n = 1:nMatch
 	plot([m1[2,n], m2[2,n]], [m1[1,n], m2[1,n]],"r-")
     end
     title("Putative matches")
-    hold(false)
+#    hold(false)
 
     # Assemble homogeneous feature coordinates for fitting of the
     # fundamental matrix, note that [x,y] corresponds to [col, row]
@@ -380,7 +381,7 @@ function fithomogdemo(img1=[], img2=[])
     @printf("Number of putative matches was %d \n", nMatch) 
     
     # Display both images overlayed with inlying matched feature points
-    figure(4);  imshow(img1);  hold(true)
+    figure(4); clf();  imshow(img1);  # hold(true)
     plot(m1[2,inliers], m1[1,inliers],"r+")
     plot(m2[2,inliers], m2[1,inliers],"g+")    
     for n = inliers
@@ -388,6 +389,6 @@ function fithomogdemo(img1=[], img2=[])
     end
 
     title("Inlying matches")
-    hold(false)
+#    hold(false)
 end
 

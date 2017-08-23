@@ -3,7 +3,7 @@
 transforms3d - Functions for performing 3D transformations
 
 
-Copyright (c) 2015 Peter Kovesi
+Copyright (c) 2015-2017 Peter Kovesi
 pk@peterkovesi.com
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -16,6 +16,7 @@ all copies or substantial portions of the Software.
 The Software is provided "as is", without warranty of any kind.
 
 PK August 2015
+   April  2017  Cleanups and optimisations
 
 ---------------------------------------------------------------------=#
 
@@ -43,9 +44,9 @@ See also: rotx(), roty(), rotz(), invht()
 
 function trans(x::Real, y::Real, z::Real)
 
-  T = [ 1.0  0.0  0.0   x
-        0.0  1.0  0.0   y
-        0.0  0.0  1.0   z
+  T = [ 1.0  0.0  0.0   float(x)
+        0.0  1.0  0.0   float(y)
+        0.0  0.0  1.0   float(z)
         0.0  0.0  0.0  1.0 ]
 end  
 
@@ -55,9 +56,9 @@ function trans{Ty<:Real}(t::Array{Ty})
         error("Translation must be a 3x1 vector or array")
     end
     
-    T = [ 1.0  0.0  0.0  t[1]
-          0.0  1.0  0.0  t[2]
-          0.0  0.0  1.0  t[3]
+    T = [ 1.0  0.0  0.0  float(t[1])
+          0.0  1.0  0.0  float(t[2])
+          0.0  0.0  1.0  float(t[3])
           0.0  0.0  0.0  1.0 ]
 end  
 
@@ -134,8 +135,8 @@ function invht{Ty<:Real}(T::Array{Ty,2})
     
     A = T[1:3,1:3]
     
-    Tinv = [   A'     -A'*T[1:3,4]
-            0. 0. 0.      1.      ]
+    Tinv = [      A'        -A'*T[1:3,4]
+            0.0  0.0  0.0      1.0      ]
 end
 
 #---------------------------------------------------------------------
@@ -145,41 +146,41 @@ transformation  matrix
 ```
 Usage:     T = angleaxis2matrix(t)
 
-Argument:  t - 3x1 vector or array specifying the rotation axis and having 
+Argument:  t - 3x1 vector specifying the rotation axis and having 
                magnitude equal to the rotation angle in radians.
 Returns:   T - 4x4 Homogeneous transformation matrix.
 ```
 See also: matrix2angleaxis(), angleaxisrotate(), angleaxis(), normaliseangleaxis()
 """
-function  angleaxis2matrix{Ty<:Real}(t::Array{Ty})
+function  angleaxis2matrix{Ty<:Real}(t::Vector{Ty})
 
     if length(t) != 3
-        error("Angle-axis must be a 3x1 vector or array")
+        error("Angle-axis must be a 3-vector")
     end
 
     theta = norm(t)
     if theta < eps()    # If the rotation is very small...
-        T = [ 1   -t[3] t[2] 0.
-              t[3] 1   -t[1] 0.
-             -t[2] t[1] 1    0.
-              0.   0.   0.   1.]
+        T = [  1.0  -t[3]   t[2]   0.0
+              t[3]   1.0   -t[1]   0.0
+             -t[2]   t[1]    1.0   0.0
+               0.0   0.0     0.0   1.0]
         
         return T
     end
     
     # Otherwise set up standard matrix, first setting up some convenience
     # variables
-    tn = t/theta;  x = tn[1]; y = tn[2]; z = tn[3];
+    tn = t./theta;  x = tn[1]; y = tn[2]; z = tn[3];
     
     c = cos(theta); s = sin(theta); C = 1.0-c
     xs = x*s;   ys = y*s;   zs = z*s
     xC = x*C;   yC = y*C;   zC = z*C
     xyC = x*yC; yzC = y*zC; zxC = z*xC
 
-    T = [ x*xC+c   xyC-zs   zxC+ys  0.
-          xyC+zs   y*yC+c   yzC-xs  0.
-          zxC-ys   yzC+xs   z*zC+c  0.
-            0.        0.      0.    1.]
+    T = [ x*xC+c   xyC-zs   zxC+ys  0.0
+          xyC+zs   y*yC+c   yzC-xs  0.0
+          zxC-ys   yzC+xs   z*zC+c  0.0
+           0.0       0.0     0.0    1.0]
 end
     
 #---------------------------------------------------------------------
@@ -237,58 +238,100 @@ function dhtrans(theta::Real, offset::Real, length::Real, twist::Real)
 
 T = [ cos(theta) -sin(theta)*cos(twist)  sin(theta)*sin(twist) length*cos(theta)
       sin(theta)  cos(theta)*cos(twist) -cos(theta)*sin(twist) length*sin(theta)
-          0.            sin(twist)             cos(twist)         offset
-          0.                0.                     0.                1.          ]
+          0.0           sin(twist)             cos(twist)         offset
+          0.0              0.0                    0.0               1.0          ]
 end
 
 #---------------------------------------------------------------------
 """
 homotrans - Homogeneous transformation of points/lines
 
-Function to perform a transformation on 2D or 3D homogeneous coordinates
-The resulting coordinates are normalised to have a homogeneous scale of 1
+Function to perform a transformation on 2D or 3D homogeneous or
+inhomogeneous coordinates. The resulting coordinates are normalised to
+have a homogeneous scale of 1.
+
 ```
-Usage:     t = homotrans(P, v)
+Usage:     t = homotrans(P, v; checkinf = false)
 
 Arguments:
-          P  - 3 x 3 or 4 x 4 homogeneous transformation matrix.
-          v  - 3 x n or 4 x n matrix of homogeneous coordinates.
+          P  - 3 x 3 or 4 x 4 homogeneous transformation matrix
+          v  - 3 x n or 4 x n matrix of homogeneous coordinates or ...
+               2 x n or 3 x n matrix of inhomogeneous coordinates
+Keyword Argument:
+    checkinf - If true code will check if the homogeneous coordinates
+               of any transformed point is at infinity (scale parameter
+               is zero). If so, no normalisation of the point is attempted.
 
-Returns   t  - Transformed homogeneous coordinates
+Returns   t  - Transformed coordinates. Homogeneous or inhomogeneous 
+               to match input data v.
 ```
+
+The input v is assumed inhomogeneous if the number of rows is equal to
+size(P,2) - 1
+
 """
 
-# 2D Array version
+# ? Should normalisation of scale test for points at infinity ?
 
-function homotrans{T<:Real}(P::Array{T}, v::Array{T,2})
+function homotrans(P::Array, v::Array; checkinf = false)
     
-    dim = size(v,1)
+    (dim, nPts) = size(v,1,2)
 
-    if size(P) != (dim,dim)
-        error("Transformation matrix and point dimensions do not match")
+    if size(P) == (dim+1, dim+1)   # Assume data is inhomogeneous
+        t = P[1:dim, 1:dim]*v
+        scale = P[dim+1,1:dim]*v
+        
+        # Add the translation component of the transform to the scale
+        # then add the translation component to t and divide by the
+        # scale to normalise the result.
+        if checkinf   # Only normalise if the scale parameter is non-zero
+            for j = 1:nPts
+                scale[j] += P[dim+1,dim+1]
+                if abs(scale[j]) > eps()
+                    for i = 1:dim
+                        t[i,j] = (t[i,j] + P[i,dim+1])/scale[j]
+                    end
+                end
+            end
+
+        else   # Do not check for points at infinity
+            for j = 1:nPts
+                scale[j] += P[dim+1,dim+1]
+                
+                for i = 1:dim
+                    t[i,j] = (t[i,j] + P[i,dim+1])/scale[j]
+                end
+            end
+        end
+        
+    elseif size(P) == (dim, dim)  # Homogeneous case
+        t = P*v       
+        
+        # Normalise to scale of 1 
+        if checkinf   # Only normalise if the scale parameter is non-zero
+            for i = 1:nPts
+                if abs(t[dim,i]) > eps()
+                    for r = 1:dim-1  
+                        t[r,i] /= t[dim,i]
+                    end
+                    t[dim,i] = 1.0
+                end
+            end
+
+        else   # Do not check for points at infinity
+            for i = 1:nPts
+                for r = 1:dim-1  
+                    t[r,i] /= t[dim,i]
+                end
+                t[dim,i] = 1.0
+            end
+        end
+
+        
+    else
+        error("Transformation matrix and point data dimensions do not match")
     end
 
-    t = P*v             # Transform
-
-    for r = 1:dim-1     # Normalise to scale of 1 
-        t[r,:] = t[r,:]./t[end,:]
-    end
-    
-    t[end,:] = 1.0
-    return t
-end
-
-# Vector version
-function homotrans{T<:Real}(P::Array{T}, v::Vector{T})
-    
-    dim = size(v,1)
-
-    if size(P) != (dim,dim)
-        error("Transformation matrix and point dimensions do not match")
-    end
-
-    t = P*v             # Transform
-    t /= t[end];        # Normalise to scale of 1 
     return t
 end
     
@@ -398,8 +441,8 @@ function matrix2angleandaxis(T::Array)
     # Trap case where rotation is very small.  ( See angleaxis2matrix() )
     Reye = R-eye(3)
     if norm(Reye) < 1e-8
-        t = [T[3,2]; T[1,3]; T[2,1]]
-        return t
+        t = [T[3,2], T[1,3], T[2,1]]
+        return norm(Reye), t
     end
 
     # Otherwise find rotation axis as the eigenvector having unit eigenvalue
@@ -428,7 +471,7 @@ function matrix2angleandaxis(T::Array)
     # Note use of twosinetheta to convert it from a 1x1 matrix to a scalar
     theta = atan2(twosintheta, twocostheta)
 
-    return  theta, vec(axis)
+    return theta, axis
 end
     
 #---------------------------------------------------------------------
@@ -449,7 +492,7 @@ See also: angleaxis2matrix(),  angleaxisrotate(), angleaxis(), normaliseangleaxi
 """
 function matrix2angleaxis(T::Array)
     (theta, axis) = matrix2angleandaxis(T)
-    return t = vec(theta*axis)
+    return theta*axis
 end
     
 #---------------------------------------------------------------------
@@ -467,7 +510,7 @@ See also: quaternion2matrix()
 """
 function matrix2quaternion(T::Array)
     (theta, axis) = matrix2angleandaxis(T)
-    return Q = vec([cos(theta/2); axis*sin(theta/2)])
+    return [cos(theta/2); axis*sin(theta/2)]
 end
     
 #---------------------------------------------------------------------
@@ -477,19 +520,19 @@ angleaxis - Constructs angle-axis descriptor
 Usage: t = angleaxis(theta, axis)
 
 Arguments: theta - angle of rotation.
-           axis  - 3x1 vector or array defining axis of rotation.
+           axis  - 3x1 vector defining axis of rotation.
 Returns:   t     - 3-vector giving rotation axis with magnitude equal to the
                    rotation angle in radians.
 ```
 See also: matrix2angleaxis(), angleaxisrotate(), angleaxis2matrix(), normaliseangleaxis()
 """
-function angleaxis(theta::Real, axis::Array)
+function angleaxis(theta::Real, axis::Vector)
     
     if length(axis) != 3
         error("Axis must be a 3 vector or array")
     end
     
-    ax = axis[:]/norm(axis[:])  # Ensure unit magnitude
+    ax = normalize(axis)  # Ensure unit magnitude
     
     # Normalise theta to lie in the range -pi to pi to ensure one-to-one mapping
     # between angle-axis descriptor and resulting rotation. 
@@ -501,7 +544,7 @@ function angleaxis(theta::Real, axis::Array)
         theta = theta + 2*pi
     end
     
-    return t = vec(theta*ax)
+    return theta*ax
 end
 
 #---------------------------------------------------------------------
@@ -512,22 +555,21 @@ quaternion  - Construct quaternion
 Usage:  Q = quaternion(theta, axis)
 
 Arguments: theta - angle of rotation
-           axis  - 3x1 vector or array defining axis of rotation.
+           axis  - 3-vector defining axis of rotation.
 Returns:   Q     - a 4-vector quaternion in the form [w, xi, yj, zk]
 ```
 See also:  quaternion2matrix(), matrix2quaternion(), quaternionrotate()
 """
-function quaternion(theta::Real, axis::Array)
+function quaternion(theta::Real, axis::Vector)
     
     if length(axis) != 3
         error("Axis must be a 3 vector or array")
     end
 
-    ax = axis[:]/norm(axis[:])
-    Q = zeros(4,1)    
-    Q[1] = cos(theta/2.)
-    Q[2:4] = sin(theta/2.)*ax
-    return vec(Q)
+    Q = zeros(4)    
+    Q[1] = cos(theta/2)
+    Q[2:4] = sin(theta/2)*normalize(axis)
+    return Q
 end
     
 #---------------------------------------------------------------------
@@ -546,10 +588,10 @@ Returns:    t2 - Normalised angle-axis descriptor
 See also: matrix2angleaxis(), angleaxis(), angleaxis2matrix(), angleaxisrotate()
 """
 
-function normaliseangleaxis(t::Array)
+function normaliseangleaxis(t::Vector)
     
     if length(t) != 3
-        error("Axis must be a 3x1 vector or array")
+        error("Axis must be a 3-vector")
     end
     
     theta = norm(t)
@@ -561,7 +603,7 @@ function normaliseangleaxis(t::Array)
         theta = theta - 2*pi; 
     end
     
-    return t2 = vec(theta*axis)
+    return theta*axis
 end
 
 #---------------------------------------------------------------------
@@ -581,7 +623,7 @@ function quaternion2matrix(Qu::Vector)
         error("Quaternion must be a 4 vector")
     end
 
-    Q = Qu/norm(Qu)  # Ensure Q has unit norm
+    Q = normalize(Qu)    # Ensure Q has unit norm
     
     # Set up convenience variables
     w = Q[1]; x = Q[2]; y = Q[3]; z = Q[4]
@@ -589,10 +631,12 @@ function quaternion2matrix(Qu::Vector)
     xy = x*y; xz = x*z; yz = y*z
     wx = w*x; wy = w*y; wz = w*z
     
-    T = [w2+x2-y2-z2  2*(xy - wz)  2*(wy + xz)   0.
-         2*(wz + xy)  w2-x2+y2-z2  2*(yz - wx)   0.
-         2*(xz - wy)  2*(wx + yz)  w2-x2-y2+z2   0.
-              0.            0.           0.      1.]
+    T = [w2+x2-y2-z2  2*(xy - wz)  2*(wy + xz)   0.0
+         2*(wz + xy)  w2-x2+y2-z2  2*(yz - wx)   0.0
+         2*(xz - wy)  2*(wx + yz)  w2-x2-y2+z2   0.0
+             0.0           0.0          0.0      1.0]
+
+    return T
 end
     
 #---------------------------------------------------------------------
@@ -612,9 +656,7 @@ function quaternionconjugate(Q::Vector)
         error("Quaternion must be a 4 vector")
     end
 
-    Qconj = copy(Q)
-    Qconj[2:4] = -Qconj[2:4]
-    return Qconj
+    return [Q[1], -Q[2], -Q[3], -Q[4]]
 end
 
 #---------------------------------------------------------------------
@@ -632,7 +674,7 @@ See also: quaternion(), quaternionrotate(), quaternionconjugate()
 function  quaternionproduct(A::Vector, B::Vector)
 
     if length(A) != 4 || length(B) != 4
-        error("Quaternion must be a 4 vector")
+        error("Quaternions must be 4 vectors")
     end
 
     Q = zeros(4,1)
@@ -715,11 +757,11 @@ Returns:   Q - Quaternion given by [0; v]
 ```
 See also: quaternion(), quaternionrotate(), quaternionproduct(), quaternionconjugate()
 """
-function vector2quaternion(v::Array)
+function vector2quaternion(v::Vector)
 
   if length(v) != 3
       error("v must be a 3-vector")
   end
 
-  return Q = [0.0; v[:]]
+  return [0.0, v[1], v[2], v[3]]
 end
