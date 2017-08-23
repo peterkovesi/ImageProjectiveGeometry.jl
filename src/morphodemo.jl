@@ -2,7 +2,7 @@
 
 using ImageProjectiveGeometry
 using PyPlot
-using PerceptualColourMaps
+# using PerceptualColourMaps
 
 
 img = imread("lena.tif");

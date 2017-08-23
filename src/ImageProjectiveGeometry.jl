@@ -135,14 +135,12 @@ Peter Kovesi
 * circularstruct - Generate circular structuring element for morphological operations.
 * floatyx - Convert 2D AbstractImage to 2D float array with y x spatial order.
 * histtruncate - Truncates ends of an image histogram.
-* normalise/normalize - Normalises image values to 0-1, or to desired mean and variance.
+* imgnormalise/imgnormalize - Normalises image values to 0-1, or to desired mean and variance.
 * matchbycorrelation - Match image feature points by correlation.
 * grey2census - Convert image grey scale values to census values.
 
 """
 module ImageProjectiveGeometry
-using Compat
-import Compat.String
 
 include("projective.jl")
 include("transforms3d.jl")
