@@ -85,7 +85,7 @@ function derivative3{T<:Real}(img::Array{T,2}, spec)
     # Compute derivatives.  Note that in the 1st call below conv2
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
-    G = Array(Array,(length(spec),1))
+    G = Array{Array}(length(spec))
     
     for n = 1:length(spec)
       if spec[n] == "x"
@@ -187,7 +187,7 @@ function derivative5{T<:Real}(img::Array{T,2}, spec)
     # result due to size of the filter
     gx = false
     gxn = 0
-    G = Array(Array,(length(spec),1))
+    G = Array{Array}(length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
@@ -276,7 +276,7 @@ function derivative7{T<:Real}(img::Array{T,2}, spec)
     # result due to size of the filter
     gx = false
     gxn = 0
-    G = Array(Array,(length(spec),1))
+    G = Array{Array}(length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
@@ -379,7 +379,7 @@ function nonmaxsuppts{T<:Real}(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
     bordermask[radius+1:end-radius, radius+1:end-radius] = true
     
     # Find maxima, threshold, and apply bordermask
-    cimgmx = (cimg.==mx) & (cimg.>thresh) & bordermask
+    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
     
     # Get row, col coords of points
     (r, c) = ind2sub(size(cimgmx),find(cimgmx)) 
@@ -722,9 +722,9 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
     # Rectangular structuring element    
     if uppercase(seType[1:3]) == "REC"
         if length(seSize) == 1
-            k = round(Int, [seSize, seSize])
+            k = round.([Int], [seSize, seSize])  # [Int] for v0.5
         else
-            k = round(Int, seSize)
+            k = round.([Int], seSize)
         end
         
         dimg = copy(img)
@@ -1126,7 +1126,7 @@ function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
 
     # Any NaN values will end up at the end of the sorted list. We
     # need to ignore these.
-    N = sum(!isnan(sortv))  # Number of non NaN values.
+    N = sum(.!isnan.(sortv))  # Number of non NaN values.
     
     # Compute indicies corresponding to specified upper and lower fractions
     # of the histogram.
@@ -1252,8 +1252,8 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
         
         # Find indices of points that are distance 'r' or greater from
         # boundary on image1 and image2;
-        n1ind = find((p1[1,:].>r) & (p1[1,:].<im1rows+1-r) & (p1[2,:].>r) & (p1[2,:].<im1cols+1-r))
-        n2ind = find((p2[1,:].>r) & (p2[1,:].<im2rows+1-r) & (p2[2,:].>r) & (p2[2,:].<im2cols+1-r))
+        n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
+        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
         
         dists2 = zeros(length(n2ind))
 

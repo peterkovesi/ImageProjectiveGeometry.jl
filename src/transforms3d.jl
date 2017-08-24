@@ -451,7 +451,7 @@ function matrix2angleandaxis(T::Array)
 
     # Find index of eigenvalue with smallest magnitude, the
     # corresponding eigenvector will be the axis.
-    absval = abs(eigval)
+    absval = abs.(eigval)
     ind = sortperm(absval)          # Find index of smallest one
     if absval[ind[1]] > 0.001       # Hopefully it is close to 0
         warn("Rotation matrix is dubious")
