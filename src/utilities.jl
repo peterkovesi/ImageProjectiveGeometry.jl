@@ -379,7 +379,15 @@ function nonmaxsuppts{T<:Real}(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
     bordermask[radius+1:end-radius, radius+1:end-radius] = true
     
     # Find maxima, threshold, and apply bordermask
-    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
+# v0.6 code to be reinstated when 0.5 goes away
+#    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
+
+# Interim code that runs under 0.5 and 0.6
+    cimgmx = zeros(Bool, rows, cols)
+    for c = 1:cols, r = 1:rows
+        cimgmx[r,c] = (cimg[r,c] == mx[r,c]) && (cimg[r,c] > thresh) && bordermask[r,c]
+    end
+
     
     # Get row, col coords of points
     (r, c) = ind2sub(size(cimgmx),find(cimgmx)) 
@@ -1126,7 +1134,8 @@ function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
 
     # Any NaN values will end up at the end of the sorted list. We
     # need to ignore these.
-    N = sum(.!isnan.(sortv))  # Number of non NaN values.
+#    N = sum(.!isnan.(sortv))  # Number of non NaN values. v0.6
+    N = sum(broadcast(!,isnan.(sortv)))  # compatibity for v0.5 and v0.6
     
     # Compute indicies corresponding to specified upper and lower fractions
     # of the histogram.
@@ -1252,9 +1261,25 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
         
         # Find indices of points that are distance 'r' or greater from
         # boundary on image1 and image2;
-        n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
-        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
-        
+# v0.6 code to be reinstated when 0.5 is retired
+#        n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
+#        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
+
+# interim code that runs under 0.5 and 0.6        
+        tmp = Array{Bool}(npts1)
+        for n = 1:npts1
+            tmp[n] = (p1[1,n]>r) && (p1[1,n]<im1rows+1-r) && (p1[2,n]>r) && (p1[2,n]<im1cols+1-r)
+        end
+        n1ind = find(tmp)
+
+        tmp = Array{Bool}(npts2)
+        for n = 1:npts2
+            tmp[n] = (p2[1,n]>r) && (p2[1,n]<im2rows+1-r) && (p2[2,n]>r) && (p2[2,n]<im2cols+1-r)
+        end
+        n2ind = find(tmp)
+
+
+
         dists2 = zeros(length(n2ind))
 
         for n1 = n1ind            
