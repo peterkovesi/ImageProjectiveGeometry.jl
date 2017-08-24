@@ -9,11 +9,13 @@ ImageProjectiveGeometry
 
 ## Installation
 
-Install via the package manager
-
+Install via the package manager.  At the moment you should checkout
+the current master rather than using Pkg.add().  While I believe the
+package runs cleanly under Julia 0.5 and 0.6 there are still some
+fixes I want to make before tagging a version.
 
 ```
-julia> Pkg.add("ImageProjectiveGeometry")
+julia> Pkg.checkout("ImageProjectiveGeometry")
 ```
 
 ```
