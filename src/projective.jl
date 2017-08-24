@@ -274,8 +274,17 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     # If C.rows and C.cols not empty determine points that are within image bounds
     if computevisibility 
         if C.rows !=0 && C.cols != 0
-            visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
-                      (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
+# v0.6 code to be reinstated when 0.5 is retired
+#            visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
+#                      (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
+
+# Interim code that runs under 0.5 and 0.6
+            visible = Array{Bool}(length(x_p))
+            for n = 1:length(x_p)
+                visible[n] = (x_p[n] >= 1.0) && (x_p[n] <= convert(Float64,C.cols)) &&
+                             (y_p[n] >= 1.0) && (y_p[n] <= convert(Float64,C.rows))
+            end
+
         else
             warn("Point visibility requested but Camera structure has no image size data")
             visible = Array{Bool}(0)
