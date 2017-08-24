@@ -33,9 +33,9 @@ r2 = 2
 
 # Check left and right solutions
 ileft = circleintersectionpts(c1, r1, c2, r2, "l")
-@test all(abs(ileft - i1) .< eps())
+@test all(abs.(ileft - i1) .< eps())
 iright = circleintersectionpts(c1, r1, c2, r2, "r")
-@test all(abs(iright - i2) .< eps())
+@test all(abs.(iright - i2) .< eps())
 
 # no intersection
 (i1, i2) = circleintersectionpts(c1, r1, c2+10, r2, "lr")
@@ -46,13 +46,13 @@ iright = circleintersectionpts(c1, r1, c2, r2, "r")
 r1 = 1
 r2 = 1
 il = circleintersectionpts(c1, r1, c2, r2, "l")
-@test all(abs(il) .< eps())
+@test all(abs.(il) .< eps())
 
 # circle of zero radius
 c2 = [0,0]
 r2 = 0
 il = circleintersectionpts(c1, r1, c2, r2, "l")
-@test all(abs(il) .< eps())
+@test all(abs.(il) .< eps())
 
 
 

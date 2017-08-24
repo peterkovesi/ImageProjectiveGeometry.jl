@@ -215,7 +215,7 @@ function ransac(x, fittingfn, distfn, degenfn, s, t, feedback = false,
     
     if feedback; @printf("\n"); end
 
-    if !any(isnan(bestM))   # We got a solution
+    if !any(isnan.(bestM))   # We got a solution
         M = bestM
         inliers = bestinliers
     else
@@ -838,7 +838,7 @@ function ransacfitline(XYZ, t::Real, feedback::Bool = false)
             d[i] = norm(lambda*p1 + (1-lambda)*p2 - p3)
         end
         
-        inliers = find(abs(d) .< t)
+        inliers = find(abs.(d) .< t)
         return inliers, L
     end    
 

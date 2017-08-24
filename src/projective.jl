@@ -274,8 +274,8 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     # If C.rows and C.cols not empty determine points that are within image bounds
     if computevisibility 
         if C.rows !=0 && C.cols != 0
-            visible = (x_p .>= 1.0) & (x_p .<= convert(Float64,C.cols)) &
-                      (y_p .>= 1.0) & (y_p .<= convert(Float64,C.rows))
+            visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
+                      (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
         else
             warn("Point visibility requested but Camera structure has no image size data")
             visible = Array{Bool}(0)
@@ -1133,7 +1133,7 @@ function normalise2dpts{Ty<:Real}(ptsa::Array{Ty,2})
     end
     
     # Find the indices of the points that are not at infinity
-    finiteind = find(abs(pts[3,:]) .> eps())
+    finiteind = find(abs.(pts[3,:]) .> eps())
     
     # Should this worning be made?
     if length(finiteind) != size(pts,2)
@@ -1149,7 +1149,7 @@ function normalise2dpts{Ty<:Real}(ptsa::Array{Ty,2})
     newp[1,finiteind] = pts[1,finiteind]-c[1] # Shift origin to centroid.
     newp[2,finiteind] = pts[2,finiteind]-c[2]
     
-    dist = sqrt(newp[1,finiteind].^2 + newp[2,finiteind].^2)
+    dist = sqrt.(newp[1,finiteind].^2 + newp[2,finiteind].^2)
     meandist = mean(dist) 
     
     scale = sqrt(2.0)/meandist

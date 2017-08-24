@@ -37,7 +37,7 @@ gpt2 = [100.0, -200.0, 0.0]
 planeP = [0.0,0.0,0.0]
 planeN = [0.0,0.0,1.0]
 planept = imagept2plane(Cam, xy, planeP, planeN)
-@test maximum(abs(planept - [gpt1 gpt2])) < f*tol
+@test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
 
 # Convert Cam structure to projection matrix and decompose to see if we get the same parameters back
 P = camera2projmatrix(Cam)
@@ -54,13 +54,13 @@ P = camera2projmatrix(Cam)
 x = rand(2,4)
 hx = makehomogeneous(x)
 x2 = makeinhomogeneous(3*hx)
-@test maximum(abs(x-x2)) < tol
+@test maximum(abs.(x-x2)) < tol
 
 # normalise1dpts
 hx = hnormalise(100*rand(2,10))
 (xn, T) = normalise1dpts(hx)
 @test abs(mean(xn[1,:])) < tol  # mean 0
-@test abs(mean(abs(xn[1,:])) - 1) < tol  # mean deviation 1
+@test abs(mean(abs.(xn[1,:])) - 1) < tol  # mean deviation 1
 
 #  normalise2dpts 
 hx = hnormalise(100*rand(3,10))
@@ -69,18 +69,18 @@ hx = hnormalise(100*rand(3,10))
 @test abs(mean(xn[2,:])) < tol
 
 # mean distance from origin is sqrt(2)
-@test abs(mean(sqrt(sum(xn[1:2,:].^2,1))) - sqrt(2)) < tol
+@test abs(mean(sqrt.(sum(xn[1:2,:].^2,1))) - sqrt(2)) < tol
 
 # check transform works
-@test maximum(abs(xn - T*hx)) < tol
+@test maximum(abs.(xn - T*hx)) < tol
 
 # skew, hcross
 a = rand(3)
 b = rand(3)
 aXb = ImageProjectiveGeometry.skew(a)*b
-@test maximum(abs(aXb - cross(a,b))) < tol
+@test maximum(abs.(aXb - cross(a,b))) < tol
 
-@test maximum(abs(hnormalise(aXb) - hcross(a,b))) < tol
+@test maximum(abs.(hnormalise(aXb) - hcross(a,b))) < tol
 
 # homography1d, homography2d
 
@@ -95,7 +95,7 @@ x2 = hnormalise(H*x1)
 
 Hfit = homography1d(x1,x2)
 Hfit = Hfit/Hfit[2,2]
-@test maximum(abs(Hfit - H)) < tol
+@test maximum(abs.(Hfit - H)) < tol
 
 # Define a 2D homography
 a = 1; b = 2; c = 3; d = -1; e = -2; f = -3; g = 2; h = -1
@@ -107,7 +107,7 @@ x1 = makehomogeneous(rand(2, 6))
 x2 = hnormalise(H*x1)
 Hfit = homography2d(x1,x2)
 Hfit = Hfit/Hfit[3,3]
-@test maximum(abs(Hfit - H)) < tol
+@test maximum(abs.(Hfit - H)) < tol
 
 
 # fundmatrix, affinefundmatrix, fundfromcameras
@@ -140,4 +140,4 @@ F2 = fundfromcameras(Cam1, Cam2)
 F1 = F1/F1[3,3]  # Adjust matrices to the same scale
 F2 = F2/F2[3,3]
 
-@test maximum(abs(F1 - F2)) < tol
+@test maximum(abs.(F1 - F2)) < tol

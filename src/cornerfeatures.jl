@@ -297,7 +297,7 @@ function shi_tomasi{T1<:Real}(img::Array{T1,2}, sigma::Real=1; args...)
     # L2 = T/2 - sqrt(T.^2/4 - D)
 
     # We just want the minimum eigenvalue
-    cimg = T/2 - sqrt(T.^2/4 - D + eps())
+    cimg = T/2 - sqrt.(T.^2/4 - D + eps())
     
     if !isempty(args)
         (r,c) = nonmaxsuppts(cimg; args...)
@@ -537,7 +537,7 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
     # Compute derivatives in x and y via Farid and Simoncelli's 5 tap
     # derivative filters
     (imgx, imgy) = derivative5(img, ("x", "y"))
-    mag = sqrt(imgx.^2 + imgy.^2)+eps() # (+eps to avoid division by 0)
+    mag = sqrt.(imgx.^2 + imgy.^2)+eps() # (+eps to avoid division by 0)
     
     # Normalise gradient values so that [imgx imgy] form unit 
     # direction vectors.
@@ -591,8 +591,8 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
         O[O .< -kappa] = -kappa  
         
         # Unsmoothed symmetry measure at this radius value
-        F = M./kappa .* (abs(O)/kappa).^alpha
-        Fo = sign(O) .* (abs(O)/kappa).^alpha   # Orientation only based measure
+        F = M./kappa .* (abs.(O)/kappa).^alpha
+        Fo = sign.(O) .* (abs.(O)/kappa).^alpha   # Orientation only based measure
         
         # Smooth and spread the symmetry measure with a Gaussian
         # proportional to n.  Also scale the smoothed result by n so

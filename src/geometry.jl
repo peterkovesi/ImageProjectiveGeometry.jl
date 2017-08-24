@@ -113,7 +113,7 @@ function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr=
     c1 = float(c1i) # Ensure c1 and c2 are floats for type stability
     c2 = float(c2i)
 
-    maxmag = maximum(abs([c1; c2; r1; r2]))  # Maximum value in data input
+    maxmag = maximum(abs.([c1; c2; r1; r2]))  # Maximum value in data input
     tol = (maxmag+1)*eps()              # Tolerance used for deciding whether values are equal
     
     bv = c2 - c1         # Baseline vector from c1 to c2
