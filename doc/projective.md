@@ -6,8 +6,11 @@ Projective Function Reference
 * [Camera](#camera) - Structure defining parameters of a camera.
 * [cameraproject](#cameraproject) - Projects 3D points into camera image.
 * [imagept2plane](#imagept2plane) - Project image points to a plane and return their 3D locations.
+* [imagecorners2plane](#imagecorners2plane) - Get the positions of image corners projected onto a plane.
+* [imagept2ray](#imagept2ray) - Compute viewing ray corresponding to an image point.
+* [imagept2ray!](#imagept2ray!) - Compute viewing ray corresponding to an image point.
 * [camera2projmatrix](#camera2projmatrix) - Generate a camera projection matrix from a Camera structure.
-* [decomposecamera](#decomposecamera) -  Decomposition of a camera projection matrix.
+* [decomposecamera](#decomposecamera) - Decomposition of a camera projection matrix.
 * [rq3](#rq3) - RQ decomposition of 3x3 matrix.
 * [makehomogeneous](#makehomogeneous) - Appends a scale of 1 to an array inhomogeneous coordinates.
 * [makeinhomogeneous](#makeinhomogeneous) - Converts homogeneous coords to inhomogeneous coordinates.
@@ -15,6 +18,7 @@ Projective Function Reference
 * [hnormalise!](#hnormalise!) - In-place normalisation of homogeneous coordinates to a scale of 1.
 * [homography1d](#homography1d) - Computes 1D homography.
 * [homography2d](#homography2d) - Computes 2D homography.
+* [solveaffine](#solveaffine) - Solve affine transformation between two sets of 2D points.
 * [normalise1dpts](#normalise1dpts) - Normalises 1D homogeneous points.
 * [normalise2dpts](#normalise2dpts) - Normalises 2D homogeneous points.
 * [skew](#skew) - Constructs 3x3 skew-symmetric matrix from 3-vector.
@@ -22,10 +26,16 @@ Projective Function Reference
 * [fundmatrix](#fundmatrix) - Computes fundamental matrix from 8 or more points.
 * [affinefundmatrix](#affinefundmatrix) - Computes affine fundamental matrix from 4 or more points.
 * [fundfromcameras](#fundfromcameras) - Fundamental matrix from camera matrices or structures.
+* [stereorectify](#stereorectify) - Rectify a stereo pair of images.
+* [stereorectifytransforms](#stereorectifytransforms) - Compute homographies that transform an image pair into a stereorectified pair.
+* [transformedimagebounds](#transformedimagebounds) - Find where the corners of an image are transformed to by transform H and return the bounds.
+* [imgtrans](#imgtrans) - Homogeneous transformation of an image.
+* [imgtrans!](#imgtrans!) - Homogeneous transformation of an image.
 * [idealimagepts](#idealimagepts) - Ideal image points with no distortion.
 * [solvestereopt](#solvestereopt) - Homogeneous linear solution of a stereo point.
 * [undistortimage](#undistortimage) - Removes lens distortion from an image.
 * [hline](#hline) - Plot a 2D line defined in homogeneous coordinates.
+* [mapimage2plane!](#mapimage2plane!) - Projects an image onto a plane in 3D.
 * [plotcamera](#plotcamera) - Plots graphical representation of camera(s) showing pose.
 
 _________________ 
@@ -139,6 +149,74 @@ parameters assuming locally that the distortion is constant, computing
 the forward distortion and then subtracting the distortion.
 
 See also Camera(), cameraproject()
+
+
+## imagecorners2plane 
+
+Get the positions of image corners projected onto a plane.
+
+```
+Usage: pt = imagecorners2plane(C, planeP, planeN)
+
+Arguments:  
+        C - Camera structure or 3x4 projection matrix.
+   planeP - 3-vector defining a point on the plane.
+   planeN - 3-vector defining the normal of the plane.
+
+Returns:
+        pt - 3x4 array of 3D points on the plane that the image corners
+             project to. Points are orderer clockwise from the top-left
+             corner of the image.
+
+```
+
+See also: imagept2plane()
+
+## imagept2ray 
+
+Compute viewing ray corresponding to an image point.
+
+```
+Usage:  ray = imagept2ray(C, x, y)
+
+Arguments:  
+         C - Camera structure, Alternatively
+             C can be a 3x4 camera projection matrix.
+      x, y - Image point  (col,row)
+
+Returns:
+       ray - 3-vector corresponding to the image point
+```
+
+Lens distortion is handled by using the standard lens distortion
+parameters assuming locally that the distortion is constant, computing
+the forward distortion and then subtracting the distortion.
+ 
+See also imagept2ray!(), Camera(), cameraproject()
+
+
+## imagept2ray! 
+
+Compute viewing ray corresponding to an image point.
+
+```
+Usage:  ray = imagept2ray!(ray, C, x, y)
+
+Arguments:  
+       ray - 3-vector to store the result.
+         C - Camera structure, Alternatively
+             C can be a 3x4 camera projection matrix.
+      x, y - Image point  (col,row)
+
+Returns:
+       ray - 3-vector corresponding to the image point
+```
+
+Lens distortion is handled by using the standard lens distortion
+parameters assuming locally that the distortion is constant, computing
+the forward distortion and then subtracting the distortion.
+ 
+See also imagept2ray(), Camera(), cameraproject()
 
 
 ## camera2projmatrix 
@@ -330,6 +408,25 @@ Returns:
 
 Usage 2 is intended for use with ransac()
 
+## solveaffine 
+
+Solve affine transformation between two sets of 2D points.
+
+```
+Usage: A = solveaffine(xy1, xy2)
+
+Arguments:
+   xy1, xy2 - 2xN arrays of corresponding 2D points
+
+Returns:
+     A - 3x3 affine transformation matrix such that xy2 = A*xy1
+         (assuming xy1 and xy2 are in homogeneous coords)
+
+    [ x2        [ a  b  c    [ x1
+      y2    =     d  e  f      y1
+       1 ]        0  0  1 ]     1 ]
+
+```
 
 ## normalise1dpts 
 
@@ -491,6 +588,153 @@ Returns:    F      - Fundamental matrix relating the two camera views.
 
 See also: fundmatrix(), affinefundmatrix(), Camera()
 
+## stereorectify 
+
+Rectify a stereo pair of images.
+
+```
+Usage: (P1r, img1r, H1, P2r, img2r, H2, dmin, dmax, dmed) = ...
+                    stereorectify(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0), 
+                     scale=1.0, disparitytruncation=0, diagnostics=false)
+
+Arguments:
+          P1, P2 - Projection matrices of the images to be rectified.
+      img1, img2 - The two images (assumed same size).
+         xy1,xy2 - Optional: Two sets of corresponding homogeneous image
+                   coordinates in the images [3 x N] in size.  If supplied
+                   these are used to construct a rectification that seeks
+                   to minimise the relative displacement between the
+                   rectified image points. 
+Keyword arguments:
+                scale - The desired scaling of the image, defaults to 1.0
+  disparitytruncation - The percentage to be clipped off the ends of the histogram 
+                        of image coordiante disparities for the determination of 
+                        the disparity range.
+          diagnostics - If true diagnostic plots are generated and disparity range 
+                        printed on screen
+
+Returns:
+        P1r, P2r - The projection matrices of the rectified images.
+    img1r, img2r - The rectified images.
+          H1, H2 - Homographies that were applied to img1 and img2 to obtain
+                   img1r, img2r.
+      dmin, dmax - The range of disparities between the images derived from
+                   the rectified image coordinates (if supplied). 
+            dmed - Median of disparities.
+```
+
+Note the value of supplying xy1 and xy2 is that the local spatial
+arrangement of pixels at any matching point between images is likely
+to be more similar and hence image descriptors are likely to work
+better.  Also, the disparity ranges between the images will be kept as
+uniform as possible.
+
+The range of disparities is derived from a histogram of the
+disparities between the supplied image coordinates with a specified
+truncation applied to the ends of the histograms to exclude outliers.
+
+## stereorectifytransforms
+
+Compute homographies that transform an image pair into a stereorectified pair.
+
+```
+Usage:  (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1, P2, img2, 
+                                   xy1=zeros(0), xy2=zeros(0); scale=1.0, disparitytruncation=0)
+
+Arguments:
+          P1, P2 - Projection matrices of the images to be rectified.
+      img1, img2 - The two images (assumed same size).
+         xy1,xy2 - Optional: Two sets of corresponding homogeneous image
+                   coordinates in the images [3 x N] in size.  If supplied
+                   these are used to construct a rectification that seeks
+                   to minimise the relative displacement between the
+                   rectified image points. 
+Keyword argument:
+                scale - The desired scaling of the image, defaults to 1.0
+  disparitytruncation - The percentage to be clipped off the ends of the histogram 
+                        of image coordiante disparities for the determination of 
+                        the disparity range.
+
+Returns:
+        P1r, P2r - The projection matrices of the rectified images.
+          H1, H2 - Homographies that should be applied to img1 and img2 to 
+                   obtain a stereorectifed pair
+      dmin, dmax - The range of disparities between the images derived from
+                   the rectified image coordinates (if supplied). 
+            dmed - Median of disparities.
+```
+
+Note the value of supplying xy1 and xy2 is that the local spatial
+arrangement of pixels at any matching point between images is likely
+to be more similar and hence image descriptors are likely to work
+better.  Also, the disparity ranges between the images will be kept as
+uniform as possible.
+
+The range of disparities is derived from a histogram of the
+disparities between the supplied image coordinates with a specified
+truncation applied to the ends of the histograms to exclude outliers.
+
+See also: stereorectify()
+
+## transformedimagebounds
+
+Find where the corners of an image are transformed to by transform H and
+return the bounds.
+
+```
+Usage:  (minx, maxx, miny, maxy) = transformedimagebounds(img::Array, H::Array)
+        (minx, maxx, miny, maxy) = transformedimagebounds(sze::Tuple, H::Array)
+
+Arguments:   img - An array storing the image or
+             sze - A tuple as returned by size() giving the size of the image.
+               H - The transforming homography, a 3x3 matrix.
+
+Returns: 
+      minx, maxx - The range of x, y coords (range of column and row coords) of 
+      miny, maxy   the transformed image.
+
+```
+
+## imgtrans 
+
+Homogeneous transformation of an image - no image scaling.
+
+```
+Applies a geometric transform to an image
+
+Usage: newimg = imgtrans(img, T)
+
+Arguments: 
+       img    - The image to be transformed.
+       T      - The 3x3 homogeneous transformation matrix.
+
+Returns:
+      newimg  - The transformed image.
+```
+
+See also: imgtrans!()
+
+
+## imgtrans! 
+
+Homogeneous transformation of an image - no image scaling.
+
+```
+Applies a geometric transform to an image
+
+Usage: imgtrans!(newimg, img, T)
+
+Arguments: 
+      newimg - Buffer for storing the transformed image.
+         img - The image to be transformed.
+           T - The 3x3 homogeneous transformation matrix.
+
+Returns: nothing
+
+```
+
+See also: imgtrans()
+
 
 ## idealimagepts 
 
@@ -596,6 +840,31 @@ limits.  This will require you to set the desired limits with a call
 to PyPlot.axis() prior to calling this function.
 
 Side effect: PyPlot hold() state will be set to true
+
+
+## mapimage2plane! 
+
+Projects an image onto a plane in 3D
+
+```
+Usage:  mapimage2plane!(mappedimg, rect3Dpts, img, P)
+
+Arguments:  
+       mappedimg - Buffer for storing the resulting projected image. ::Array{Float64,2}
+          rect3D - 3x4 array specifying the 3D coordinates of the four
+                   corners of the image rectangle. Points are ordered 
+                   clockwise from the top-left corner.
+             img - Image to be projected. ::Array{Float64,2}
+               P - 3x4 projection matrix for img.
+
+```
+
+The four 3D points specifying the corners of the rectangle in the
+plane are projected into the image to obtain their corresponding image
+coordinates.  A homography is computed between these points and the
+corner coordinates of the mappedimage buffer.  This is then applied to
+img to project it into mappedimg.
+
 
 ## plotcamera 
 

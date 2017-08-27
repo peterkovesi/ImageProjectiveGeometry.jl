@@ -52,6 +52,11 @@ lengthRatioConstraint
 =#
 
 #------------------------------------------------------------------------
+
+# To consider in the future:
+# Define an AbstractCamera type so that subtypes of Camera,
+# FishEyeCamera, RollingShutterCamera etc etc. can be defined
+
 """
 Camera - Structure defining parameters of a camera following the Brown 
          distortion model
@@ -414,7 +419,7 @@ end
 
 #-------------------------------------------------------------------------------------
 """
-mapimage2plane - Projects an image onto a plane in 3D
+mapimage2plane! - Projects an image onto a plane in 3D
 
 ```
 Usage:  mapimage2plane!(mappedimg, rect3Dpts, img, P)
@@ -463,9 +468,24 @@ end
 
 #-------------------------------------------------------------------------------------
 """
+imagecorners2plane - Get the positions of image corners projected onto a plane.
 
-imagecorners2plane - Get the positions of image corners projected onto a plane
+```
+Usage: pt = imagecorners2plane(C, planeP, planeN)
 
+Arguments:  
+        C - Camera structure or 3x4 projection matrix.
+   planeP - 3-vector defining a point on the plane.
+   planeN - 3-vector defining the normal of the plane.
+
+Returns:
+        pt - 3x4 array of 3D points on the plane that the image corners
+             project to. Points are orderer clockwise from the top-left
+             corner of the image.
+
+```
+
+See also: imagept2plane()
 """
 
 function imagecorners2plane(C::Camera, planeP::Vector, planeN::Vector)
@@ -479,7 +499,8 @@ end
 
 #--------------------------------------------------------------------------
 """
-imagept2ray! - Compute viewing ray corresponding to an image point
+imagept2ray! - Compute viewing ray corresponding to an image point.
+
 ```
 Usage:  ray = imagept2ray!(ray, C, x, y)
 
@@ -542,7 +563,8 @@ function imagept2ray!(ray, C::Camera, x, y)
 end
 
 """
-imagept2ray - Compute viewing ray corresponding to an image point
+imagept2ray - Compute viewing ray corresponding to an image point.
+
 ```
 Usage:  ray = imagept2ray(C, x, y)
 
@@ -1008,17 +1030,24 @@ end
 
 #-------------------------------------------------------------------------------
 """
-solveaffine
+solveaffine - Solve affine transformation between two sets of 2D points.
+
 ```
 Usage: A = solveaffine(xy1, xy2)
 
-Solve affine transformation between two sets of 2D points
+Arguments:
+   xy1, xy2 - 2xN arrays of corresponding 2D points
 
-[ x2        [ a  b  c    [ x1
-  y2    =     d  e  f      y1
-   1 ]        0  0  1 ]     1 ]
+Returns:
+     A - 3x3 affine transformation matrix such that xy2 = A*xy1
+         (assuming xy1 and xy2 are in homogeneous coords)
+
+    [ x2        [ a  b  c    [ x1
+      y2    =     d  e  f      y1
+       1 ]        0  0  1 ]     1 ]
 
 ```
+
 """
 
 function solveaffine(xy1, xy2)
@@ -1468,7 +1497,7 @@ end
 
 #------------------------------------------------------------------------------
 """
-stereorectify - Rectify a stereo pair of images
+stereorectify - Rectify a stereo pair of images.
 
 ```
 Usage: (P1r, img1r, H1, P2r, img2r, H2, dmin, dmax, dmed) = ...
@@ -1510,6 +1539,8 @@ uniform as possible.
 The range of disparities is derived from a histogram of the
 disparities between the supplied image coordinates with a specified
 truncation applied to the ends of the histograms to exclude outliers.
+
+See also: stereorectifytransforms()
 """
 #=
 Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
@@ -1584,7 +1615,7 @@ end
 """
 stereorectifytransforms
 
-Compute homographies that transform an image pair into a stereorectified pair
+Compute homographies that transform an image pair into a stereorectified pair.
 
 ```
 Usage:  (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1, P2, img2, 
@@ -1622,6 +1653,8 @@ uniform as possible.
 The range of disparities is derived from a histogram of the
 disparities between the supplied image coordinates with a specified
 truncation applied to the ends of the histograms to exclude outliers.
+
+See also: stereorectify()
 """
 
 # Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
@@ -2256,7 +2289,7 @@ end
 
 #---------------------------------------------------------------------
 """
-imgtrans - Homogeneous transformation of an image - no image scaling
+imgtrans - Homogeneous transformation of an image - no image scaling.
 
 ```
 Applies a geometric transform to an image
@@ -2271,6 +2304,7 @@ Returns:
       newimg  - The transformed image.
 ```
 
+See also: imgtrans!()
 """
 
 #=
@@ -2369,6 +2403,26 @@ function imgtrans{T}(img::Array{T,2}, H::Array{Float64,2})
     
     return newimg
 end
+
+"""
+imgtrans! - Homogeneous transformation of an image - no image scaling.
+
+```
+Applies a geometric transform to an image
+
+Usage: imgtrans!(newimg, img, T)
+
+Arguments: 
+      newimg - Buffer for storing the transformed image.
+         img - The image to be transformed.
+           T - The 3x3 homogeneous transformation matrix.
+
+Returns: nothing
+
+```
+
+See also: imgtrans()
+"""
 
 
 # Version for image represented by 2D array inplace

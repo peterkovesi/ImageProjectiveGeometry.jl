@@ -35,6 +35,9 @@ Peter Kovesi
 * Camera - Structure defining parameters of a camera.
 * cameraproject - Projects 3D points into camera image.
 * imagept2plane - Project image points to a plane and return their 3D locations.
+* imagecorners2plane - Get the positions of image corners projected onto a plane.
+* imagept2ray - Compute viewing ray corresponding to an image point.
+* imagept2ray! - Compute viewing ray corresponding to an image point.
 * camera2projmatrix - Generate a camera projection matrix from a Camera structure.
 * decomposecamera -  Decomposition of a camera projection matrix.
 * rq3 - RQ decomposition of 3x3 matrix.
@@ -44,6 +47,7 @@ Peter Kovesi
 * hnormalise! - In-place normalisation of homogeneous coordinates to a scale of 1.
 * homography1d - Computes 1D homography.
 * homography2d - Computes 2D homography.
+* solveaffine - Solve affine transformation between two sets of 2D points.
 * normalise1dpts - Normalises 1D homogeneous points.
 * normalise2dpts - Normalises 2D homogeneous points.
 * skew - Constructs 3x3 skew-symmetric matrix from 3-vector.
@@ -51,10 +55,16 @@ Peter Kovesi
 * fundmatrix - Computes fundamental matrix from 8 or more points.
 * affinefundmatrix - Computes affine fundamental matrix from 4 or more points.
 * fundfromcameras - Fundamental matrix from camera matrices or structures.
+* stereorectify - Rectify a stereo pair of images.
+* stereorectifytransforms - Compute homographies that transform an image pair into a stereorectified pair.
+* transformedimagebounds - Find where the corners of an image are transformed to by transform H and return the bounds.
+* imgtrans - Homogeneous transformation of an image.
+* imgtrans! - Homogeneous transformation of an image.
 * idealimagepts - Ideal image points with no distortion.
 * solvestereopt - Homogeneous linear solution of a stereo point.
 * undistortimage - Removes lens distortion from an image.
 * hline - Plot a 2D line defined in homogeneous coordinates.
+* mapimage2plane! - Projects an image onto a plane in 3D.
 * plotcamera - Plots graphical representation of camera(s) showing pose.
 
 *Corner Features*
@@ -133,11 +143,17 @@ Peter Kovesi
 * imdilate - Image morpholgical dilation.
 * imerode - Image morpholgical erosion.
 * circularstruct - Generate circular structuring element for morphological operations.
+* medfilt2 - Convenience wrapper for median filtering.
+* stdfilt2 - Compute local standard deviation across an image.
 * floatyx - Convert 2D AbstractImage to 2D float array with y x spatial order.
 * histtruncate - Truncates ends of an image histogram.
 * imgnormalise/imgnormalize - Normalises image values to 0-1, or to desired mean and variance.
 * matchbycorrelation - Match image feature points by correlation.
 * grey2census - Convert image grey scale values to census values.
+* briefcoords - Compute BRIEF descriptor sampling coordinates within a patch.
+* grey2lbp - Convert image grey scale values to local binary pattern.
+* grey2lbp! - Convert image grey scale values to local binary pattern.
+* keypause - Wait for user to hit return before continuing.
 
 """
 module ImageProjectiveGeometry

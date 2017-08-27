@@ -13,12 +13,17 @@ Utilities Function Reference
 * [imdilate](#imdilate) - Image morpholgical dilation.
 * [imerode](#imerode) - Image morpholgical erosion.
 * [circularstruct](#circularstruct) - Generate circular structuring element for morphological operations.
+* [medfilt2](#medfilt2) - Convenience wrapper for median filtering.
+* [stdfilt2](#stdfilt2) - Compute local standard deviation across an image.
 * [floatyx](#floatyx) - Convert 2D AbstractImage to 2D float array with y x spatial order.
 * [histtruncate](#histtruncate) - Truncates ends of an image histogram.
-* [normalise/normalize](#normalise/normalize) - Normalises image values to 0-1, or to desired mean and variance.
+* [imgnormalise/imgnormalize](#imgnormalise/imgnormalize) - Normalises image values to 0-1, or to desired mean and variance.
 * [matchbycorrelation](#matchbycorrelation) - Match image feature points by correlation.
 * [grey2census](#grey2census) - Convert image grey scale values to census values.
-
+* [briefcoords](#briefcoords) - Compute BRIEF descriptor sampling coordinates within a patch.
+* [grey2lbp](#grey2lbp) - Convert image grey scale values to local binary pattern.
+* [grey2lbp!](#grey2lbp!) - Convert image grey scale values to local binary pattern.
+* [keypause](#keypause) - Wait for user to hit return before continuing.
 _________________
 
 
@@ -370,6 +375,44 @@ Returns:       se - Bool structuring element of size (2*radius+1)^2
 
 See also: imdilate(), imerode()
 
+## medfilt2
+
+Convenience wrapper for median filtering.
+
+```
+Usage:  medimg = medfilt2(img, h::Int, w::Int)
+        medimg = medfilt2(img, h::Int)   
+        medimg = medfilt2(img, hw::Tuple)
+
+Arguments:   img - Image to be processed, Array{T,2}
+            h, w - Height and width of rectangular window over which the 
+                   median is to be computed. Values must be odd.
+                   h and w may be specified as a size tuple, or as a
+                   single value in which case w and h are made equal.
+
+Returns:  medimg - Median filtered image.
+
+```
+
+stdfilt2 
+
+Compute local standard deviation across an image.
+
+```
+Usage:  stdimg = stdfilt2(img, h::Int, w::Int)
+        stdimg = stdfilt2(img, h::Int)
+        stdimg = stdfilt2(img, hw::Tuple)
+
+Arguments:   img - Image to be processed, Array{T,2}
+            h, w - Height and width of rectangular window over which the 
+                   standard deviation is to be computed. Values must be odd.
+                   h and w may be specified as a size tuple, or as a
+                   single value in which case w and h are made equal.
+
+Returns:  stdimg - Standard deviation image.
+
+```
+
 ## floatyx 
 
 Convert 2D AbstractImage to float data in y x spatial order
@@ -427,22 +470,22 @@ Returns:
                   fraction values.  If the input image was colour the
                   lightness values are clipped and stretched to the range
                   0-1.  If the input image is greyscale no stretching is
-                  applied. You may want to use normalise() to achieve this.
+                  applied. You may want to use imgnormalise() to achieve this.
 ```
 
-## normalise/normalize
+## imgnormalise/imgnormalize
 
 Normalises image values to 0-1, or to desired mean and variance.
 
 ```
-Usage 1:      nimg = normalise(img)
+Usage 1:      nimg = imgnormalise(img)
 
 ```
 Offsets and rescales image so that the minimum value is 0
 and the maximum value is 1.  
 
 ```
-Usage 2:      nimg = normalise(img, reqmean, reqvar)
+Usage 2:      nimg = imgnormalise(img, reqmean, reqvar)
 
 Arguments:  img     - A grey-level input image.
             reqmean - The required mean value of the image.
@@ -530,5 +573,122 @@ that is invariant to lighting variations.  Note, however, that the encoding is
 dependent on the image orientation.
 
 Use the Hamming distance to compare encoded pixel values when matching.
+
+## briefcoords 
+
+Compute BRIEF descriptor sampling coordinates within a patch.
+
+```
+Usage:  rc = briefcoords(S, nPairs, UorG; disp=false)
+
+Arguments:  S - An odd integer specifying the patch size (S x S).  
+       nPairs - Number of point pairs required.  Typically this is a power
+                of 2, 128, 256, 512 for packing the descriptor values into
+                a bit string.
+         UorG - Character 'U' or 'G' indicating whether a uniform or
+                gaussian distribution of point pairings is formed within
+                the patch.  
+         disp - Optional boolean flag indicating whether a plot of the point
+                pairings should be displayed.
+
+Returns:   rc - [2 x 2*nPairs] array of integer (row; col) coordinates
+                with all values in the range -(S-1)/2..(S-1)/2.  Each
+                successive pair of columns is intended to provide a pair of
+                points for comparing image grey values against each other
+                for forming a BRIEF descriptor of a patch about some
+                central feature location. 
+```
+
+Use of the Gaussian distribution of point pairings corresponds to the approach
+suggested by Calonder et al in their original paper.  Note, however that for
+small patches and a large number of pairings one will get repeated pairings
+which reduces the degrees of freedom in the final descriptor.  The uniformly
+distributed option does not result in repeated pairings making it the
+preferred option for small patch sizes.
+
+See also: grey2lbp(), grey2lbp!()
+
+## grey2lbp 
+
+Convert image grey scale values to local binary pattern.
+
+```
+Usage:  lbpim = grey2lbp(img, rc, window)
+
+Arguments:
+          img - greyscale image to be processed
+           rc - [2 x 2*nPairs] array of integer (row;col) coordinates.
+                Each successive pair of columns provides a pair of
+                points for comparing image grey values against each other
+                for forming a binary descriptor of a patch about some
+                central feature location. Array rc must not have more than
+                128 columns corresponding to an encoding of 64 bits,
+       window - 2-vector specifying the size of the window to be considered
+                in computing the local standard deviation for determining
+                regions to be encoded with a 0.  The window size values
+                should match the range of values in rc and be odd.
+
+Returns:
+        lbpim - Local Binary Pattern encoded UInt64 image.
+```
+
+Each pixel is encoded with a bit pattern formed by comparing pairs of pixels.
+If the difference between pixels is -ve they are are encoded with 1, else 0.
+This provides an encoding that describes a pixel in terms of its surrounding
+pixels in a way that is invariant to lighting variations.  Note, however, that
+the encoding is dependent on the image orientation.   The encoding is also
+sensitive to noise on near constant regions.
+
+Use the Hamming distance to compare encoded pixel values when matching.
+
+See also: grey2lbp!(), grey2census(), briefcoords()
+
+
+## grey2lbp! - Convert image grey scale values to local binary pattern.
+
+```
+Usage:   grey2lbp!(lbpim, img, rc, window)
+
+Arguments:
+        lbpim - Buffer for Local Binary Pattern encoded image. 
+                Must be of type Array{UInt64,2}.
+          img - greyscale image to be processed
+           rc - [2 x 2*nPairs] array of integer (row;col) coordinates.
+                Each successive pair of columns provides a pair of
+                points for comparing image grey values against each other
+                for forming a binary descriptor of a patch about some
+                central feature location. Array rc must not have more than
+                128 columns corresponding to an encoding of 64 bits,
+       window - 2-vector specifying the size of the window to be considered
+                in computing the local standard deviation for determining
+                regions to be encoded with a 0.  The window size values
+                should match the range of values in rc and be odd.
+
+Returns:  nothing
+        
+```
+
+Each pixel is encoded with a bit pattern formed by comparing pairs of pixels.
+If the difference between pixels is -ve they are are encoded with 1, else 0.
+This provides an encoding that describes a pixel in terms of its surrounding
+pixels in a way that is invariant to lighting variations.  Note, however, that
+the encoding is dependent on the image orientation.   The encoding is also
+sensitive to noise on near constant regions.
+
+Use the Hamming distance to compare encoded pixel values when matching.
+
+See also: grey2lbp(), grey2census(), briefcoords()
+
+## keypause 
+
+Wait for user to hit return before continuing.
+
+```
+Usage:  keypause()
+```
+
+
+
+
 
 
