@@ -1458,7 +1458,7 @@ end
 
 #-----------------------------------------------------------------
 """
-briefcoords - Compute BRIEF descriptor sampling coordinates within a patch
+briefcoords - Compute BRIEF descriptor sampling coordinates within a patch.
 
 ```
 Usage:  rc = briefcoords(S, nPairs, UorG; disp=false)
@@ -1563,7 +1563,7 @@ end
 
 #-----------------------------------------------------------------
 """
-grey2lbp - Convert image grey scale values to local binary pattern
+grey2lbp - Convert image grey scale values to local binary pattern.
 
 ```
 Usage:  lbpim = grey2lbp(img, rc, window)
@@ -1646,6 +1646,42 @@ end
 
 #----------------------------
 # Inplace version
+"""
+grey2lbp! - Convert image grey scale values to local binary pattern.
+
+```
+Usage:   grey2lbp!(lbpim, img, rc, window)
+
+Arguments:
+        lbpim - Buffer for Local Binary Pattern encoded image. 
+                Must be of type Array{UInt64,2}.
+          img - greyscale image to be processed
+           rc - [2 x 2*nPairs] array of integer (row;col) coordinates.
+                Each successive pair of columns provides a pair of
+                points for comparing image grey values against each other
+                for forming a binary descriptor of a patch about some
+                central feature location. Array rc must not have more than
+                128 columns corresponding to an encoding of 64 bits,
+       window - 2-vector specifying the size of the window to be considered
+                in computing the local standard deviation for determining
+                regions to be encoded with a 0.  The window size values
+                should match the range of values in rc and be odd.
+
+Returns:  nothing
+        
+```
+
+Each pixel is encoded with a bit pattern formed by comparing pairs of pixels.
+If the difference between pixels is -ve they are are encoded with 1, else 0.
+This provides an encoding that describes a pixel in terms of its surrounding
+pixels in a way that is invariant to lighting variations.  Note, however, that
+the encoding is dependent on the image orientation.   The encoding is also
+sensitive to noise on near constant regions.
+
+Use the Hamming distance to compare encoded pixel values when matching.
+
+See also: grey2lbp(), grey2census(), briefcoords()
+"""
 
 function grey2lbp!(lbpim::Array{UInt64,2}, img::Array, rc::Array, window::Vector)
 
@@ -1705,7 +1741,7 @@ end
 
 #------------------------------------------------------------------    
 """
-medfilt2 - Convenience wrapper for median filtering
+medfilt2 - Convenience wrapper for median filtering.
 
 ```
 Usage:  medimg = medfilt2(img, h::Int, w::Int)
@@ -1721,6 +1757,7 @@ Arguments:   img - Image to be processed, Array{T,2}
 Returns:  medimg - Median filtered image.
 
 ```
+
 """
 
 # ** To be rewritten using Huang's algorithm or Perreault and Hebert's
@@ -1745,7 +1782,7 @@ end
 
 #------------------------------------------------------------------------------
 """
-stdfilt2 - Compute local standard deviation across an image
+stdfilt2 - Compute local standard deviation across an image.
 
 ```
 Usage:  stdimg = stdfilt2(img, h::Int, w::Int)
@@ -1761,6 +1798,7 @@ Arguments:   img - Image to be processed, Array{T,2}
 Returns:  stdimg - Standard deviation image.
 
 ```
+
 """
 
 function stdfilt2(img::Array, h::Int, w::Int)
@@ -1798,10 +1836,12 @@ end
 
 #----------------------------------------------------------------------
 """
-keypause - Wait for user to hit return before continuing
+keypause - Wait for user to hit return before continuing.
+
 ```
 Usage:  keypause()
 ```
+
 """
 
 function keypause()
