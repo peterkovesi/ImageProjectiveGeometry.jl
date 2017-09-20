@@ -9,12 +9,10 @@ ImageProjectiveGeometry
 
 ## Installation
 
-Install via the package manager.  At the moment you should clone
-the current master rather than using Pkg.add().  After some work the
-package now runs under Julia 0.5 and 0.6, however it is not yet tagged. (1st September 2017)
+Install via the package manager.  
 
 ```
-julia> Pkg.clone("https://github.com/peterkovesi/ImageProjectiveGeometry.jl")
+julia> Pkg.add("ImageProjectiveGeometry")
 ```
 
 ```
