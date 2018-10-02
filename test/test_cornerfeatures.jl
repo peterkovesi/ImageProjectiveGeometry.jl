@@ -3,7 +3,7 @@
 println("testing cornerfeatures")
 
 using ImageProjectiveGeometry
-using Base.Test
+using Test
 
 tol = 1;
 
@@ -37,7 +37,7 @@ hdet = hessianfeatures(img, 1)
 
 # Check nonmaxsuppts does subpixel precision. Create a 2x2 block of
 # pixels in the image and locate the centre of that
-img[r0:r0+1, c0:c0+1] = 10
+img[r0:r0+1, c0:c0+1] .= 10
 (cimg, r, c) = shi_tomasi(img, N=1,radius=5,subpixel=true)
 tol = 0.1
 @test abs(r[1]-(r0+0.5)) < tol && abs(c[1]-(c0+0.5)) < tol

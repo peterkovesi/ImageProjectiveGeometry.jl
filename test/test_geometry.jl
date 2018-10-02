@@ -2,6 +2,8 @@
 
 println("testing geometry")
 
+using Test
+
 tol = 1e-8
 
 # ray2raydist
@@ -38,7 +40,7 @@ iright = circleintersectionpts(c1, r1, c2, r2, "r")
 @test all(abs.(iright - i2) .< eps())
 
 # no intersection
-(i1, i2) = circleintersectionpts(c1, r1, c2+10, r2, "lr")
+(i1, i2) = circleintersectionpts(c1, r1, c2 .+ 10, r2, "lr")
 @test isempty(i1)
 @test isempty(i2)
 
@@ -87,8 +89,8 @@ poly1 = [0  2  3  0
 
 poly2 = [0  2  1
          0  0  1]
-@test convexpolyintersect(poly1, poly2)      # intersect
-@test !convexpolyintersect(poly1, poly2+10)  # not intersect
+@test convexpolyintersect(poly1, poly2)         # intersect
+@test !convexpolyintersect(poly1, poly2 .+ 10)  # not intersect
 
 poly3 = [-2  0  -1
           0  0   1]

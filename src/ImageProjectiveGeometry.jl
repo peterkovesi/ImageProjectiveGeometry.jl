@@ -16,7 +16,8 @@ all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
 
-PK February 2016
+PK February  2016
+   September 2018 - Updates for v0.7/v1.0
 
 
 ----------------------------------------------------------------------------=#

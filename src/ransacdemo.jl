@@ -15,14 +15,15 @@ all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
 
-PK March 2016
+PK March     2016
+   September 2018 Updates for v0.7/v1.0
 
 ---------------------------------------------------------------------=#
 
 export fitlinedemo, fitplanedemo
 export fitfunddemo, fithomogdemo
 
-using PyPlot
+using ImageProjectiveGeometry, PyPlot, Printf, FileIO
 
 #-----------------------------------------------------------------------
 """
@@ -49,11 +50,10 @@ Try using:  fitlinedemo(0.3, 0.05, 0.05)
 ```
 See also: ransacfitplane(), fitplane()
 """
-# August 2006  testfitline created from testfitplane
-#              author: Felix Duvallet
-
 function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
-
+    # August 2006  testfitline created from testfitplane
+    #              author: Felix Duvallet
+    
     # Hard wire some constants - vary these as you wish
     npts = 100  # Number of 3D data points	
     
@@ -72,10 +72,10 @@ function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     opts = npts - vpts                    # No of outlying points
     
     # Generate npts points in the line
-    X = rand(1,npts)
+    X = rand(Float64, 1,npts)
     
     Y = m*X
-    Z = n*X + Y + b
+    Z = n*X .+ Y .+ b
     Z = zeros(size(Y))
     
     XYZ =  [X
@@ -83,14 +83,14 @@ function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     	    Z]
 
     # Add uniform noise of +/-sigma
-    XYZ = XYZ + (2*rand(size(XYZ))-1)*sigma
+    XYZ = XYZ .+ (2*rand(Float64, size(XYZ)) .- 1)*sigma
     
     # Generate opts random outliers
     n = size(XYZ,2)
     ind = randperm(n)[1:opts]  # get a random set of point indices of length opts 
       
     # Add uniform noise of outsigma to the points chosen to be outliers.  
-    XYZ[:,ind] = XYZ[:,ind] + sign(rand(3,opts)-.5).*(rand(3,opts)+1)*outsigma    
+    XYZ[:,ind] = XYZ[:,ind] .+ sign.(rand(Float64, 3,opts).-0.5).*(rand(Float64, 3,opts).+1)*outsigma    
     
     # Perform RANSAC fitting of the line
     (V, P, inliers) = ransacfitline(XYZ, t, feedback)
@@ -144,8 +144,6 @@ Try using:  fitplanedemo(0.3, 0.02, 0.05)
 ```
 See also: ransacfitplane(), fitplane()
 """
-# June 2003
-
 function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
 
     # Hard wire some constants - vary these as you wish
@@ -163,16 +161,16 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     opts = npts - vpts                    # No of outlying points
     
     # Generate npts points in the plane
-    X = rand(npts)'
-    Y = rand(npts)'
-    Z = (-a*X -b*Y -d)/c
+    X = rand(Float64, npts)'
+    Y = rand(Float64, npts)'
+    Z = (-a*X .- b*Y .-d)/c
     
     XYZ =  [X
 	    Y
 	    Z]
     
     # Add uniform noise of +/-sigma
-    XYZ = XYZ + (2*rand(size(XYZ))-1)*sigma
+    XYZ = XYZ .+ (2*rand(Float64, size(XYZ)) .- 1)*sigma
     
     # Generate opts random outliers
     
@@ -181,7 +179,7 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     
     # Add uniform noise of outsigma to the points chosen to be outliers.
     #  XYZ(:,ind) = XYZ(:,ind)  + (2*rand(3,opts)-1)*outsigma
-    XYZ[:,ind] = XYZ[:,ind]  +   sign(rand(3,opts)-.5).*(rand(3,opts)+1)*outsigma    
+    XYZ[:,ind] = XYZ[:,ind] .+ sign.(rand(Float64, 3,opts).-0.5).*(rand(Float64, 3,opts).+1)*outsigma    
     
     # Display the cloud of points (vec() needed for 0.4)
     figure(1); clf(); plot3D(vec(XYZ[1,:]),vec(XYZ[2,:]),vec(XYZ[3,:]), "r*")
@@ -225,12 +223,13 @@ Edit code as necessary to tweak parameters
 
 See also: ransacfitfundmatrix(), fundmatrix()
 """
-
 function fitfunddemo(img1=[], img2=[])
     
     if isempty(img1)
-	img1 = PyPlot.imread("img02.jpg")
-	img2 = PyPlot.imread("img03.jpg")    
+	#img1 = PyPlot.imread("img02.jpg")
+	#img2 = PyPlot.imread("img03.jpg")
+        img1 = float(load("img02.jpg"))
+	img2 = float(load("img03.jpg"))
     end
 
     (rows1,cols1) = size(img1)
@@ -243,13 +242,15 @@ function fitfunddemo(img1=[], img2=[])
     # Find Shi Tomasi corners in image1 and image2
     (cim1, r1, c1) = shi_tomasi(img1, 1, radius=nonmaxrad, N=200, img=img1, fig=1)
     (cim2, r2, c2) = shi_tomasi(img2, 1, radius=nonmaxrad, N=200, img=img2, fig=2)
+    figure(1); axis("off"); 
+    figure(2); axis("off"); 
     keypause()
 
     @printf("Matching features...\n")
-    (m1,m2) = matchbycorrelation(img1, [r1';c1'], img2, [r2';c2'], w, dmax)
+    (m1,m2) = matchbycorrelation(copy(img1), [r1';c1'], copy(img2), [r2';c2'], w, dmax)
     
     # Display putative matches
-    figure(3); clf(); imshow(img1);  # hold(true)
+    figure(3); clf(); imshow(img1); axis("off")  # hold(true)
     nMatch = size(m1,2)
     for n = 1:nMatch
 	plot([m1[2,n], m2[2,n]], [m1[1,n], m2[1,n]],"r-")
@@ -275,7 +276,7 @@ function fitfunddemo(img1=[], img2=[])
     @printf("Number of putative matches was %d \n", nMatch)
     
     # Display both images overlayed with inlying matched feature points
-    figure(4); clf();  imshow(img1);  # hold(true)
+    figure(4); clf();  imshow(img1);  axis("off") # hold(true)
     plot(m1[2,inliers], m1[1,inliers],"r+")
     plot(m2[2,inliers], m2[1,inliers],"g+")    
     for n = inliers
@@ -339,13 +340,13 @@ Edit code as necessary to tweak parameters
 ```
 See also: ransacfithomography(), homography2d()
 """
-# February 2004
-
 function fithomogdemo(img1=[], img2=[])
 
     if isempty(img1)
-	img1 = PyPlot.imread("boats.jpg")
-	img2 = PyPlot.imread("boatsrot.jpg")    
+	#img1 = PyPlot.imread("boats.jpg")
+	#img2 = PyPlot.imread("boatsrot.jpg")
+        img1 = float(load("boats.jpg"))
+	img2 = float(load("boatsrot.jpg"))
     end
 
     nonmaxrad = 3  # Non-maximal suppression radius

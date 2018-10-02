@@ -19,6 +19,7 @@ The Software is provided "as is", without warranty of any kind.
 PK June 2016
 
 ---------------------------------------------------------------------=#
+using LinearAlgebra
 
 export ray2raydist, circleintersectionpts
 export rectintersect, pointinconvexpoly, isconvexpoly
@@ -43,21 +44,20 @@ Each ray is defined by a point on the ray and a vector giving the direction
 of the ray.  Thus a point on ray 1 will be given by  p1 + alpha*v1  where
 alpha is some scalar.
 """
-
 function ray2raydist(p1::Vector, v1::Vector, p2::Vector, v2::Vector)
     
     # Get vector perpendicular to both rays
     n = cross(v1, v2)
-    nnorm = sqrt(vecdot(n,n))
+    nnorm = sqrt(dot(n,n))
 
     # Check if lines are parallel. If so, form a vector perpendicular to v1
     # that is within the plane formed by the parallel rays.
     if nnorm < eps()
-        n = cross(v1, p1-p2)  # Vector perpendicular to plane formed by pair
-                              # of rays.
-        n = cross(v1, n)      # Vector perpendicular to v1 within the plane
-                              # formed by the 2 rays.
-        nnorm = sqrt(vecdot(n,n))
+        n = cross(v1, p1 .- p2) # Vector perpendicular to plane formed by pair
+                                # of rays.
+        n = cross(v1, n)        # Vector perpendicular to v1 within the plane
+                                # formed by the 2 rays.
+        nnorm = sqrt(dot(n,n))
 
         if nnorm < eps()      # p1 and p2 must be coincident
             return  0.0
@@ -75,7 +75,7 @@ function ray2raydist(p1::Vector, v1::Vector, p2::Vector, v2::Vector)
     #
     # as n is prependicular to v1 and v2 this reduces to
     #   d = (p2 - p1).n
-    return abs(vecdot((p2 - p1), n))
+    return abs(dot((p2 .- p1), n))
 end
 
 #--------------------------------------------------------------------------
@@ -107,7 +107,6 @@ two circles are identical there are an infinite number of solutions.
 In this case we simply choose to subtract/add r1 in the x direction to
 c1 to obtain the 'left' and 'right' solutions.
 """
-
 function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr="lr")
 
     c1 = float(c1i) # Ensure c1 and c2 are floats for type stability
@@ -116,7 +115,7 @@ function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr=
     maxmag = maximum(abs.([c1; c2; r1; r2]))  # Maximum value in data input
     tol = (maxmag+1)*eps()              # Tolerance used for deciding whether values are equal
     
-    bv = c2 - c1         # Baseline vector from c1 to c2
+    bv = c2 .- c1        # Baseline vector from c1 to c2
     b = norm(bv)         # The distance between the centres
     
     # Trap case of baseline of zero length.  If r1 == r2 we have a
@@ -124,17 +123,17 @@ function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr=
     # solutions.  Here we simply choose to subtract/add r1 in the x
     # direction to c1 to obtain the 'left' and 'right' solutions.
     if b < tol && abs(r1-r2) < tol  
-        i1 = c1 - [r1, 0]
-        i2 = c1 + [r1, 0]
+        i1 = c1 .- [r1, 0]
+        i2 = c1 .+ [r1, 0]
     else  
         bv = bv/b             # Normalised baseline vector.
         bvp = [-bv[2], bv[1]] # Vector perpendicular to baseline
         
         # Trap the degenerate cases where one of the radii are zero, or nearly zero
-        if r1 < tol && abs(b-r2) < tol
+        if r1 < tol && abs(b - r2) < tol
             i1 = c1
             i2 = c1
-        elseif r2 < tol && abs(b-r1) < tol
+        elseif r2 < tol && abs(b - r1) < tol
             i1 = c2
             i2 = c2
             
@@ -147,8 +146,8 @@ function circleintersectionpts(c1i::Vector, r1::Real, c2i::Vector, r2::Real, lr=
             cosR2 = (b^2 + r1^2 - r2^2)/(2*b*r1)
             sinR2 = sqrt(1-cosR2^2)
             
-            i1 = c1 + r1*cosR2*bv + r1*sinR2*bvp   # 'left' solution
-            i2 = c1 + r1*cosR2*bv - r1*sinR2*bvp   # and 'right solution
+            i1 = c1 .+ r1*cosR2*bv .+ r1*sinR2*bvp   # 'left' solution
+            i2 = c1 .+ r1*cosR2*bv .- r1*sinR2*bvp   # and 'right solution
         end    
     end
 
@@ -184,7 +183,6 @@ Returns:             Boolean result
 
 See also: convexpolyintersect()
 """
-
 function rectintersect(r1::Vector, r2::Vector) 
     
     intersect = (r1[1] <= r2[1]+r2[3] && 
@@ -215,14 +213,6 @@ isconvexpoly() if needed
 
 See also: isconvexpoly()
 """
-
-# Strategy: Determine whether, in traveling from p to a vertex and
-# then to the following vertex, we turn clockwise or anticlockwise.
-# If for every vertex we turn consistently clockwise, or consistently
-# anticlockwise we are inside the polygon.  If for one of the vertices
-# we did not turn clockwise or anticlockwise then we must be on the
-# boundary.
-
 function pointinconvexpoly(p::Vector, poly::Array)
     
     (dim, N) = size(poly)
@@ -230,9 +220,9 @@ function pointinconvexpoly(p::Vector, poly::Array)
     if length(p) != 2 || dim != 2
         error("Data must be 2D")
     end
-    
-    # Determine whether, in traveling from p to a vertex and then to the
-    # following vertex, we turn clockwise or anticlockwise
+
+    # Strategy: Determine whether, in traveling from p to a vertex and
+    # then to the following vertex, we turn clockwise or anticlockwise.
     c = zeros(Int, N)
     for n = 1:N-1
         c[n] = clockwise(p, view(poly,:,n), view(poly,:,n+1))
@@ -290,7 +280,6 @@ isconvexpoly() if needed
 
 See also: isconvexpoly(), rectintersect()
 """
-
 function convexpolyintersect(p1::Array, p2::Array)
 
     # Function to test if two 1D segments overlap.
@@ -357,7 +346,6 @@ Returns:   true if polygon is convex.
 
 See also: convexpolyintersect(), pointinconvexpoly()
 """
-
 function isconvexpoly(poly::Array)
 
     (dim, N) = size(poly)

@@ -1,3 +1,4 @@
+using Test, Random
 
 println("testing ransac")
 
@@ -16,7 +17,7 @@ opts = npts - vpts                    # No of outlying points
 #    Z = 0
 m = 6    
 # Generate npts points in the line
-X = rand(1,npts)
+X = rand(Float64, 1, npts)
 Y = m*X
 Z = zeros(size(Y))
 
@@ -25,12 +26,11 @@ XYZ =  [X
     	Z]
 
 # Add uniform noise of +/-sigma
-XYZ = XYZ + (2*rand(size(XYZ))-1)*sigma
+XYZ = XYZ .+ (2*rand(Float64, size(XYZ)) .- 1)*sigma
 
 # Generate opts random outliers
 n = size(XYZ,2)
 ind = randperm(n)[1:opts]  # get a random set of point indices of length opts 
-
 
 # Perform RANSAC fitting of the line
 t = 0.02  # inlier tolerance

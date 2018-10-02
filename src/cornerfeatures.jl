@@ -16,6 +16,7 @@ all copies or substantial portions of the Software.
 The Software is provided "as is", without warranty of any kind.
 
 PK August 2015
+   September 2018 updated for v0.7/v1.0
 
 ---------------------------------------------------------------------=#
 
@@ -23,7 +24,7 @@ export structuretensor, harris, noble, shi_tomasi, coherence
 export hessianfeatures
 export fastradial
 
-import Images
+import LinearAlgebra, Images
 
 #----------------------------------------------------------------------
 """
@@ -84,24 +85,16 @@ really want.
 
 See also: noble(), shi_tomasi(), hessianfeatures(), nonmaxsuppts(), derivative5()
 """
-#=
-References: 
-C.G. Harris and M.J. Stephens. "A combined corner and edge detector", 
-Proceedings Fourth Alvey Vision Conference, Manchester.
-pp 147-151, 1988.
-
-March     2002 - Original version
-August    2005 - Changed so that code calls nonmaxsuppts
-August    2010 - Changed to use Farid and Simoncelli's derivative filters
-September 2015 - Ported to Julia
-January   2016 - noble() made distict from harris() and argument handling 
-                 changed 
-=#
-
-function  harris{T<:Real}(img::Array{T,2}, sigma::Real=1; k::Real=0.04, args...)
-
+function  harris(img::Array{T,2}, sigma::Real=1; k::Real=0.04, args...) where T <: Real
+    #=
+    References: 
+    C.G. Harris and M.J. Stephens. "A combined corner and edge detector", 
+    Proceedings Fourth Alvey Vision Conference, Manchester.
+    pp 147-151, 1988.
+    =#
+    
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)
-    cimg = (Ix2.*Iy2 - Ixy.^2) - k*(Ix2 + Iy2).^2 
+    cimg = (Ix2.*Iy2 .- Ixy.^2) .- k*(Ix2 + Iy2).^2 
 
     if isempty(args)
         return cimg
@@ -113,7 +106,7 @@ function  harris{T<:Real}(img::Array{T,2}, sigma::Real=1; k::Real=0.04, args...)
 end
 
 # Case for img::ImageMeta 
-function harris{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; k::Real=0.04, args...)
+function harris(img::Images.ImageMeta{T,2}, sigma::Real=1; k::Real=0.04, args...) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -179,27 +172,19 @@ really want.
 See also: harris(), shi_tomasi(), hessianfeatures(), nonmaxsuppts(),
 structuretensor(), derivative5()
 """
-#=
-References: 
-C.G. Harris and M.J. Stephens. "A combined corner and edge detector", 
-Proceedings Fourth Alvey Vision Conference, Manchester.
-pp 147-151, 1988.
-
-Alison Noble, "Descriptions of Image Surfaces", PhD thesis, Department
-of Engineering Science, Oxford University 1989, p45.
-
-March     2002 - Original version
-August    2005 - Changed so that code calls nonmaxsuppts
-August    2010 - Changed to use Farid and Simoncelli's derivative filters
-September 2015 - Ported to Julia
-January   2016 - noble() made distict from harris() and argument handling 
-                 changed 
-=#
-
-function  noble{T<:Real}(img::Array{T,2}, sigma::Real=1; args...)
-
+function  noble(img::Array{T,2}, sigma::Real=1; args...) where T <: Real
+    #=
+    References: 
+    C.G. Harris and M.J. Stephens. "A combined corner and edge detector", 
+    Proceedings Fourth Alvey Vision Conference, Manchester.
+    pp 147-151, 1988.
+    
+    Alison Noble, "Descriptions of Image Surfaces", PhD thesis, Department
+    of Engineering Science, Oxford University 1989, p45.
+    =#
+    
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)
-    cimg = (Ix2.*Iy2 - Ixy.^2)./(Ix2 + Iy2 + eps()) 
+    cimg = (Ix2.*Iy2 .- Ixy.^2)./(Ix2 .+ Iy2 .+ eps()) 
 
     if !isempty(args)
         (r,c) = nonmaxsuppts(cimg; args...)
@@ -211,7 +196,7 @@ function  noble{T<:Real}(img::Array{T,2}, sigma::Real=1; args...)
 end
 
 # Case for img::ImageMeta 
-function noble{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; args...)
+function noble(img::Images.ImageMeta{T,2}, sigma::Real=1; args...) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -277,27 +262,24 @@ features.  This is no longer relevant today!
 See also: harris(), noble(), hessianfeatures(), structuretensor(),
 nonmaxsuppts(), derivative5()
 """
-#=
-Reference: 
-J. Shi and C. Tomasi. "Good Features to Track,". 9th IEEE Conference on
-Computer Vision and Pattern Recognition. 1994.
-
-January 2016 - Original version
-=#
-
-function shi_tomasi{T1<:Real}(img::Array{T1,2}, sigma::Real=1; args...)
+function shi_tomasi(img::Array{T1,2}, sigma::Real=1; args...) where T1 <: Real
+    #=
+    Reference: 
+    J. Shi and C. Tomasi. "Good Features to Track,". 9th IEEE Conference on
+    Computer Vision and Pattern Recognition. 1994.
+    =#
 
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)    
 
-    T = Ix2 + Iy2                 # trace
-    D = Ix2.*Iy2 - Ixy.^2         # determinant
+    T = Ix2 .+ Iy2                 # trace
+    D = Ix2.*Iy2 .- Ixy.^2         # determinant
     
     # The two eigenvalues of the 2x2 structure tensor are:
     # L1 = T/2 + sqrt(T.^2/4 - D)
     # L2 = T/2 - sqrt(T.^2/4 - D)
 
     # We just want the minimum eigenvalue
-    cimg = T/2 - sqrt.(T.^2/4 - D + eps())
+    cimg = T/2 .- sqrt.(T.^2/4 .- D .+ eps())
     
     if !isempty(args)
         (r,c) = nonmaxsuppts(cimg; args...)
@@ -309,7 +291,7 @@ function shi_tomasi{T1<:Real}(img::Array{T1,2}, sigma::Real=1; args...)
 end    
 
 # Case for img::ImageMeta 
-function shi_tomasi{T}(img::Images.ImageMeta{T,2}, sigma::Real=1; args...)
+function shi_tomasi(img::Images.ImageMeta{T,2}, sigma::Real=1; args...) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -352,26 +334,25 @@ property spatialorder set to ["y","x"].
 
 See also: structuretensor()
 """
-
-function coherence{T1<:Real}(img::Array{T1,2}, sigma::Real=1)
+function coherence(img::Array{T1,2}, sigma::Real=1) where T1 <: Real
 
     (Ix2, Iy2, Ixy) = structuretensor(img, sigma)    
 
-    T = Ix2 + Iy2                 # trace
-    D = Ix2.*Iy2 - Ixy.^2         # determinant
+    T = Ix2 .+ Iy2                 # trace
+    D = Ix2.*Iy2 .- Ixy.^2         # determinant
     
     # The two eigenvalues of the 2x2 structure tensor are:
-    L1 = T/2 + sqrt(T.^2/4 - D)
-    L2 = T/2 - sqrt(T.^2/4 - D)
+    L1 = T/2 .+ sqrt(T.^2/4 .- D)
+    L2 = T/2 .- sqrt(T.^2/4 .- D)
 
     # Coherence is defined as ((L1-L2)./(L1+L2)).^2
     # this can be reduced to the following
-    return 4*(T.^2/4 - D) ./ T.^2
+    return 4*(T.^2/4 .- D) ./ T.^2
 
 end
 
 # Case for img::ImageMeta 
-function coherence{T}(img::Images.ImageMeta{T,2}, sigma::Real=1)
+function coherence(img::Images.ImageMeta{T,2}, sigma::Real=1) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -398,9 +379,7 @@ Returns:
 ```
 See also: shi_tomasi(), harris(), noble(), coherence(), derivative5()
 """
-# April 2016
-
-function structuretensor{T<:Real}(img::Array{T,2}, sigma::Real=1)
+function structuretensor(img::Array{T,2}, sigma::Real=1) where T <: Real
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
@@ -451,7 +430,7 @@ property spatialorder set to ["y","x"].
 
 See also: harris(), noble(), shi_tomasi(), derivative5(), nonmaxsuppts()
 """
-function  hessianfeatures{T<:Real}(img::Array{T,2}, sigma::Real=1)
+function  hessianfeatures(img::Array{T,2}, sigma::Real=1) where T <: Real
 
     if sigma > 0    # Convolve with Gaussian at desired sigma
         Gimg = gaussfilt(img,  sigma)
@@ -469,11 +448,11 @@ function  hessianfeatures{T<:Real}(img::Array{T,2}, sigma::Real=1)
     Lxy = Lxy*sigma^2
     
     # Determinant
-    return hdet = Lxx.*Lyy - Lxy.^2
+    return hdet = Lxx.*Lyy .- Lxy.^2
 end
 
 # Case for img::ImageMeta 
-function hessianfeatures{T}(img::Images.ImageMeta{T,2}, sigma::Real=1)
+function hessianfeatures(img::Images.ImageMeta{T,2}, sigma::Real=1) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)
@@ -519,25 +498,18 @@ Reference:
 Loy, G.  Zelinsky, A.  Fast radial symmetry for detecting points of
 interest.  IEEE PAMI, Vol. 25, No. 8, August 2003. pp 959-973.
 """
-
-# November 2004  - original version
-# December 2009  - Gradient threshold added + minor code cleanup
-# July     2010  - Gradients computed via Farid and Simoncelli's 5 tap
-#                  derivative filters
-# August   2015  - Ported to Julia
-
-function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta::Real=0)
+function fastradial(img::Array{T,2}, radii::Vector, alpha::Real=2, beta::Real=0) where T <: Real
     
     if !isa(radii, Vector{Int}) && !isa(radii, Int) || minimum(radii) < 1
         error("radii must be a vector of integers and > 1")
     end
     
-    (rows,cols) = size(img,1,2)
+    (rows,cols) = size(img)
     
     # Compute derivatives in x and y via Farid and Simoncelli's 5 tap
     # derivative filters
     (imgx, imgy) = derivative5(img, ("x", "y"))
-    mag = sqrt.(imgx.^2 + imgy.^2)+eps() # (+eps to avoid division by 0)
+    mag = sqrt.(imgx.^2 .+ imgy.^2) .+ eps() # (+eps to avoid division by 0)
     
     # Normalise gradient values so that [imgx imgy] form unit 
     # direction vectors.
@@ -587,8 +559,8 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
             kappa = 9.9
         end
         
-        O[O .>  kappa] =  kappa  
-        O[O .< -kappa] = -kappa  
+        O[O .>  kappa] .=  kappa  
+        O[O .< -kappa] .= -kappa  
         
         # Unsmoothed symmetry measure at this radius value
         F = M./kappa .* (abs.(O)/kappa).^alpha
@@ -613,7 +585,7 @@ function fastradial{T<:Real}(img::Array{T,2}, radii::Vector, alpha::Real=2, beta
 end
 
 # Case for img::ImageMeta 
-function fastradial{T}(img::Images.ImageMeta{T,2}, radii::Vector, alpha::Real=2, beta::Real=0)
+function fastradial(img::Images.ImageMeta{T,2}, radii::Vector, alpha::Real=2, beta::Real=0) where T <: Real
 
     # Extract 2D float array in y x spatial order
     (dimg, prop) = floatyx(img)

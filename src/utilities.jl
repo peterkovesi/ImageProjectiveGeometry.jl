@@ -17,6 +17,7 @@ The Software is provided "as is", without warranty of any kind.
 
 PK April 2016 Initial version
    April 2017 Updates
+   September 2018 update for v0.7/v1.0
 
 ---------------------------------------------------------------------=#
 
@@ -31,7 +32,8 @@ export medfilt2, stdfilt2
 export grey2census, grey2lbp, grey2lbp!
 export keypause
 
-import Images, ImageFiltering, PyPlot
+using LinearAlgebra, Statistics
+import DSP, Images, ImageFiltering, PyPlot
 
 #----------------------------------------------------------------------
 """
@@ -62,12 +64,9 @@ Returns:
 ```                                           
 See also: derivative5(), derivative7()
 """
-# Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
-# Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
-
-# April 2010
-
-function derivative3{T<:Real}(img::Array{T,2}, spec)
+function derivative3(img::Array{T,2}, spec) where T <: Real
+    # Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
+    # Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
@@ -85,13 +84,13 @@ function derivative3{T<:Real}(img::Array{T,2}, spec)
     # Compute derivatives.  Note that in the 1st call below conv2
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
-    G = Array{Array}(length(spec))
+    G = Array{Array}(undef, length(spec))
     
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = conv2(p, d1, fimg)[2:end-1, 2:end-1]
+          G[n] = DSP.conv2(p, d1, fimg)[2:end-1, 2:end-1]
       elseif spec[n] == "y"
-          G[n] = conv2(d1, p, fimg)[2:end-1, 2:end-1]
+          G[n] = DSP.conv2(d1, p, fimg)[2:end-1, 2:end-1]
       else
           badspec = spec[n]
           error(" $badspec is an unrecognized derivative option")
@@ -135,15 +134,9 @@ Returns:
 ```
 See also: derivative7()
 """
-#=
-Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
-Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
-
-April 2010
-September 2015 Ported to Julia
-=#
-
-function derivative5{T<:Real}(img::Array{T,2}, spec)
+function derivative5(img::Array{T,2}, spec) where T <: Real
+    # Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
+    # Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
@@ -187,25 +180,25 @@ function derivative5{T<:Real}(img::Array{T,2}, spec)
     # result due to size of the filter
     gx = false
     gxn = 0
-    G = Array{Array}(length(spec))
+    G = Array{Array}(undef,length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = conv2(p, d1, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv2(p, d1, fimg)[3:end-2, 3:end-2]
           gx = true   # Record that gx is available for gxy if needed
           gxn = n
       elseif spec[n] == "y"
-          G[n] = conv2(d1, p, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv2(d1, p, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "xx"
-          G[n] = conv2(p, d2, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv2(p, d2, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "yy"
-          G[n] = conv2(d2, p, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv2(d2, p, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "xy" || spec[n] == "yx"
           if gx
-              G[n] = conv2(d1, p, G[gxn])[3:end-2, 3:end-2]
+              G[n] = DSP.conv2(d1, p, G[gxn])[3:end-2, 3:end-2]
           else
-              gx = conv2(p, d1, fimg)[3:end-2, 3:end-2]
-              G[n] = conv2(d1, p, gx)[3:end-2, 3:end-2]
+              gx = DSP.conv2(p, d1, fimg)[3:end-2, 3:end-2]
+              G[n] = DSP.conv2(d1, p, gx)[3:end-2, 3:end-2]
           end
       else
           badspec = spec[n]
@@ -250,12 +243,9 @@ Returns:
 ```
 See also: derivative5()
 """
-# Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
-# Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
-
-# April 2010
-
-function derivative7{T<:Real}(img::Array{T,2}, spec)
+function derivative7(img::Array{T,2}, spec) where T <: Real
+    # Reference: Hany Farid and Eero Simoncelli "Differentiation of Discrete
+    # Multi-Dimensional Signals" IEEE Trans. Image Processing. 13(4): 496-508 (2004)
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
@@ -276,25 +266,25 @@ function derivative7{T<:Real}(img::Array{T,2}, spec)
     # result due to size of the filter
     gx = false
     gxn = 0
-    G = Array{Array}(length(spec))
+    G = Array{Array}(undef, length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = conv2(p, d1, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv2(p, d1, fimg)[4:end-3, 4:end-3]
           gx = true    # Record that gx is available for gxy if needed
           gxn = n
       elseif spec[n] == "y"
-          G[n] = conv2(d1, p, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv2(d1, p, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "xx"
-          G[n] = conv2(p, d2, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv2(p, d2, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "yy"
-          G[n] = conv2(d2, p, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv2(d2, p, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "xy" || spec[n] == "yx"
           if gx
-              G[n] = conv2(d1, p, G[gxn])[4:end-3, 4:end-3]
+              G[n] = DSP.conv2(d1, p, G[gxn])[4:end-3, 4:end-3]
           else
-              gx = conv2(p, d1, fimg)[4:end-3, 4:end-3]
-              G[n] = conv2(d1, p, gx)[4:end-3, 4:end-3]
+              gx = DSP.conv2(p, d1, fimg)[4:end-3, 4:end-3]
+              G[n] = DSP.conv2(d1, p, gx)[4:end-3, 4:end-3]
           end
       else
           badspec = spec[n]
@@ -353,20 +343,20 @@ all be marked as local maxima.
 
 See also: harris(), noble(), shi_tomasi(), hessianfeatures()
 """
-#=
-September 2003  Original MATLAB version
-August    2015  Ported to Julia
-January   2016  Reworked to allow the N strongest features to be returned.
-=#
+function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0, 
+                      N::Int=typemax(Int), subpixel::Bool=false, img=[], fig = nothing) where T <: Real
 
-function nonmaxsuppts{T<:Real}(cimg::Array{T,2}; radius::Real=1, thresh::Real=0, 
-                               N::Int=typemax(Int), subpixel::Bool=false, img=[], fig = nothing)
+    #=
+    September 2003  Original MATLAB version
+    August    2015  Ported to Julia
+    January   2016  Reworked to allow the N strongest features to be returned.
+    =#
 
     if radius < 1
         error("Radius must be 1 or greater")
     end
 
-    (rows,cols) = size(cimg,1,2)
+    (rows,cols) = size(cimg)
     
     # Extract local maxima by performing a grey scale morphological
     # dilation and then finding points in the corner strength image that
@@ -376,21 +366,27 @@ function nonmaxsuppts{T<:Real}(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
 
     # Make mask to exclude points within radius of the image boundary. 
     bordermask = zeros(Bool, size(cimg))
-    bordermask[radius+1:end-radius, radius+1:end-radius] = true
+    bordermask[radius+1:end-radius, radius+1:end-radius] .= true
     
     # Find maxima, threshold, and apply bordermask
 # v0.6 code to be reinstated when 0.5 goes away
 #    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
 
-# Interim code that runs under 0.5 and 0.6
+# Interim code that runs under 0.5 and 0.6 ** check for 0.7**
     cimgmx = zeros(Bool, rows, cols)
     for c = 1:cols, r = 1:rows
         cimgmx[r,c] = (cimg[r,c] == mx[r,c]) && (cimg[r,c] > thresh) && bordermask[r,c]
     end
 
     
-    # Get row, col coords of points
-    (r, c) = ind2sub(size(cimgmx),find(cimgmx)) 
+    # Get row, col coords of points.  The following is a clumsy replacement of
+    # ind2sub.  It would be nice to make the function return an array of
+    # CartesianIndicies however this would not allow maxima to be returned with
+    # sub-pixel accuracy.
+#    (r, c) = ind2sub(size(cimgmx),findall(cimgmx)) 
+    ci = findall(cimgmx);  # CartesianIndices of maxima
+    r = [ci[n][1] for n = 1:length(ci)]
+    c = [ci[n][2] for n = 1:length(ci)]
 
     # Check if we want to limit the number of maxima
     if isfinite(N)   
@@ -489,20 +485,16 @@ size.
 
 See also: dilate1d(), imerode(), imdilate()
 """
+function erode1d(f::Array{T,1}, ki::Real) where T <: Real
+    #=
+    Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
+    filters on rectangular and octagonal kernels".  Pattern Recognition Letters 13
+    (1992) pp 517-521
+    =#
+    # Two separate functions here because I am having trouble forming the
+    # function template using a parameterised Union as follows:
+    # function erode1d{T<:Real}(f::Union{Array{T,1}, BitArray{1}}, ki::Real)
 
-#=
-Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
-filters on rectangular and octagonal kernels".  Pattern Recognition Letters 13
-(1992) pp 517-521
-
-PK April 2016
-=#
-
-# Two separate functions here because I am having trouble forming the
-# function template using a parameterised Union as follows:
-# function erode1d{T<:Real}(f::Union{Array{T,1}, BitArray{1}}, ki::Real)
-
-function erode1d{T<:Real}(f::Array{T,1}, ki::Real)
     return erode_dilate1d(f, ki, "ERODE")
 end
 
@@ -530,16 +522,7 @@ size.
 
 See also: erode1d(), imdilate(), imerode()
 """
-
-#=
-Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
-filters on rectangular and octagonal kernels".  Pattern Recognition Letters 13
-(1992) pp 517-521
-
-PK April 2016
-=#
-
-function dilate1d{T<:Real}(f::Array{T,1}, ki::Real)
+function dilate1d(f::Array{T,1}, ki::Real) where T <: Real
     return erode_dilate1d(f, ki, "DILATE")
 end
 
@@ -590,7 +573,7 @@ function erode_dilate1d(f, ki::Real, erode_dilate::String)
     # array is a multiple of k
     extrapad = round(Int, mod(Nf + rad1+rad2, k))
     padval = typemin_max(typeof(f[1]));
-    fpad = [repmat([padval], rad1); f[:]; repmat([padval], rad2+extrapad)]
+    fpad = [repeat([padval], rad1); f[:]; repeat([padval], rad2+extrapad)]
 
     N = length(fpad)
     g=copy(fpad)
@@ -648,14 +631,13 @@ respect to the size of the image, irrespective of the structing element size.
 
 See also imerode(), erode1d(), dilate1d()
 """
-
-function imdilate{T<:Real, T2<:Integer}(img::Array{T,2}, seType::String, 
-                                        seSize::Union{Array{T2,1},T2})
+function imdilate(img::Array{T,2}, seType::String, 
+                  seSize::Union{Array{T2,1},T2}) where {T<:Real, T2<:Integer}
     imerode_dilate(img, seType, seSize, "DILATE")
 end
 
-function imdilate{T2<:Integer}(img::BitArray{2}, seType::String, 
-                               seSize::Union{Array{T2,1},T2})
+function imdilate(img::BitArray{2}, seType::String, 
+                  seSize::Union{Array{T2,1},T2}) where T2 <: Integer
     imerode_dilate(img, seType, seSize, "DILATE")
 end
 
@@ -688,14 +670,13 @@ respect to the size of the image, irrespective of the structing element size.
 
 See also imdilate(), erode1d(), dilate1d()
 """
-
-function imerode{T<:Real, T2<:Integer}(img::Array{T,2}, seType::String, 
-                                       seSize::Union{Array{T2,1},T2})
+function imerode(img::Array{T,2}, seType::String, 
+                 seSize::Union{Array{T2,1},T2}) where {T<:Real, T2<:Integer}
     imerode_dilate(img, seType, seSize, "ERODE")
 end
 
-function imerode{T2<:Integer}(img::BitArray{2}, seType::String, 
-                 seSize::Union{Array{T2,1},T2})
+function imerode(img::BitArray{2}, seType::String, 
+                 seSize::Union{Array{T2,1},T2}) where T2<:Integer
     imerode_dilate(img, seType, seSize, "ERODE")
 end
 
@@ -725,7 +706,7 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         error("Option must be 'erode' or 'dilate' ")
     end
 
-    (rows,cols) = size(img,1,2)
+    (rows,cols) = size(img)
     
     # Rectangular structuring element    
     if uppercase(seType[1:3]) == "REC"
@@ -848,8 +829,7 @@ Returns:
 ```
 See also: imdilate(), circularstruct()
 """
-
-function imerode{T<:Real}(img::Array{T,2}, se)
+function imerode(img::Array{T,2}, se) where T <: Real
     return imerode_dilate(img, se, "ERODE")
 end
 
@@ -873,8 +853,7 @@ Returns:
 ```
 See also: imerode(), circularstruct()
 """
-
-function imdilate{T<:Real}(img::Array{T,2}, se)
+function imdilate(img::Array{T,2}, se) where T <: Real
     return imerode_dilate(img, se, "DILATE")
 end
 
@@ -900,11 +879,11 @@ function imerode_dilate(img, se, erode_dilate::String)
         error("Option must be 'erode' or 'dilate' ")
     end
 
-    (rows,cols) = size(img,1,2)
+    (rows,cols) = size(img)
     (sr,sc) = size(se)
     roff = round(Int, (sr-1)/2)
     coff = round(Int, (sc-1)/2)
-    dimg = zeros(img)
+    dimg = zeros(size(img))
 
     for r = 1:rows-sr, c = 1:cols-sc
         dimg[r+roff, c+coff] = min_max(img[r:r+sr-1,  c:c+sc-1].*se)
@@ -925,8 +904,6 @@ Returns:       se - Bool structuring element of size (2*radius+1)^2
 ```
 See also: imdilate(), imerode()
 """
-# April 2016
-
 function circularstruct(radius::Real)
     se = [ sqrt(x^2+y^2) .<= radius  for x = -radius:radius, y = -radius:radius ]
 end
@@ -948,9 +925,6 @@ If called with sigma = 0 the function immediately returns with img assigned
 to smimg
 
 """
-# March 2010
-# June  2013  - Provision for multi-channel images
-
 function gaussfilt(img::Array, sigma::Real)
  
     if sigma < eps()
@@ -998,8 +972,7 @@ so that it is in "y" "x" (row, column) spatial order.  The
 ImageMeta spatial order property is set to ["y","x"] and the
 properties returned.
 """
-
-function floatyx{T}(img::Images.ImageMeta{T,2})
+function floatyx(img::Images.ImageMeta{T,2}) where T <: Real
 
     fimg = float(Images.data(img))
     prop = copy(img.properties)
@@ -1034,18 +1007,16 @@ Arguments:  img     - A grey-level input image.
 Offsets and rescales image so that nimg has mean reqmean and variance
 reqvar.  
 """
-
-# Normalise 0 - 1
-function imgnormalise(img::Array) 
-    n = img - minimum(img)
+function imgnormalise(img::Array) # Normalise 0 - 1
+    n = img .- minimum(img)
     return n = n/maximum(n)
 end
 
 # Normalise to desired mean and variance
 function imgnormalise(img::Array, reqmean::Real, reqvar::Real)
-    n = img - mean(img)
-    n = n/std(img)      # Zero mean, unit std dev
-    return n = reqmean + n*sqrt(reqvar)
+    n = img .- mean(img)
+    n /= std(img)      # Zero mean, unit std dev
+    return n = reqmean .+ n*sqrt(reqvar)
 end
 
 # For those who spell normalise with a 'z'
@@ -1066,7 +1037,6 @@ Arguments:  img     - A grey-level input image.
 Offsets and rescales image so that nimg has mean reqmean and variance
 reqvar.  
 """
-
 function imgnormalize(img::Array) 
     return imgnormalise(img)
 end
@@ -1113,12 +1083,6 @@ Returns:
 ```
 See also: imgnormalise()
 """
-
-# July      2001 - Original version
-# February  2012 - Added handling of NaN values in image
-# February  2014 - Code cleanup
-# September 2014 - Default for uHistCut + cleanup
-
 function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
     
     if lHistCut < 0 || lHistCut > 100 || uHistCut < 0 || uHistCut > 100
@@ -1146,8 +1110,8 @@ function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
     high_val = sortv[hind]
 
     # Adjust image
-    newimg[newimg .< low_val] = low_val
-    newimg[newimg .> high_val] = high_val
+    newimg[newimg .< low_val] .= low_val
+    newimg[newimg .> high_val] .= high_val
     
     return newimg
 end
@@ -1209,20 +1173,18 @@ Returns:
 ```
 This function is slow as mud! Needs some attention.
 """
-# Probably needs devectorisation to improve speed 
-
-#=
-February 2004    - Original version
-May      2004    - Speed improvements + constraint on search radius for
-                   additional speed
-August   2004    - Vectorized distance calculation for more speed
-                   (thanks to Daniel Wedge)
-December 2009    - Added return of indices of matching points from original
-                   point arrays
-May 2016         - Ported to Julia
-=#
-
 function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
+    # Probably needs devectorisation to improve speed 
+    #=
+    February 2004    - Original version
+    May      2004    - Speed improvements + constraint on search radius for
+    additional speed
+    August   2004    - Vectorized distance calculation for more speed
+    (thanks to Daniel Wedge)
+    December 2009    - Added return of indices of matching points from original
+    point arrays
+    May 2016         - Ported to Julia
+    =#
 
     #-------------------------------------------------------------------------
     # Function that does the work.  This function builds a correlation matrix
@@ -1240,8 +1202,8 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
             error("Window size should be odd")
         end
         
-        (rows1, npts1) = size(p1,1,2)
-        (rows2, npts2) = size(p2,1,2)    
+        (rows1, npts1) = size(p1)
+        (rows2, npts2) = size(p2)
         if rows1 != 2 || rows2 != 2
             error("Feature points must be specified in 2xN arrays")
         end
@@ -1249,8 +1211,8 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
         # Initialize correlation matrix values to -infinty
         cormat = -Inf*ones(npts1,npts2)
         
-        (im1rows, im1cols) = size(img1,1,2)
-        (im2rows, im2cols) = size(img2,1,2)    
+        (im1rows, im1cols) = size(img1)
+        (im2rows, im2cols) = size(img2)
 
         r = (w-1)÷2   # 'radius' of correlation window
 
@@ -1266,17 +1228,17 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
 #        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
 
 # interim code that runs under 0.5 and 0.6        
-        tmp = Array{Bool}(npts1)
+        tmp = Array{Bool}(undef, npts1)
         for n = 1:npts1
             tmp[n] = (p1[1,n]>r) && (p1[1,n]<im1rows+1-r) && (p1[2,n]>r) && (p1[2,n]<im1cols+1-r)
         end
-        n1ind = find(tmp)
+        n1ind = findall(tmp)
 
-        tmp = Array{Bool}(npts2)
+        tmp = Array{Bool}(undef, npts2)
         for n = 1:npts2
             tmp[n] = (p2[1,n]>r) && (p2[1,n]<im2rows+1-r) && (p2[2,n]>r) && (p2[2,n]<im2cols+1-r)
         end
-        n2ind = find(tmp)
+        n2ind = findall(tmp)
 
 
 
@@ -1298,7 +1260,7 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
                     ind += 1
                     dists2[ind] = sum((p1[:,n1]-p2[:,i]).^2)
                 end
-	        n2indmod = n2ind[find(dists2 .< dmax^2)]
+	        n2indmod = n2ind[findall(dists2 .< dmax^2)]
             end
             
             # Calculate normalised correlation measure.  Note this gives
@@ -1328,7 +1290,7 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     
     # Generate correlation matrix
     cormat = correlationmatrix(img1, p1, img2, p2, w, dmax)
-    (corrows,corcols) = size(cormat,1,2)
+    (corrows,corcols) = size(cormat)
 
     # Find max along rows give strongest match in p2 for each p1
     mp2forp1 = zeros(corrows)
@@ -1394,18 +1356,14 @@ Use the Hamming distance to compare encoded pixel values when matching.
   hammingDist = count_ones(img1[r,c] \$ img2[r,c])
 ```
 """
+function grey2census(img::Array{T,2}; window::Vector{T2}=[7,9], medianref = true) where {T<:Real,T2<:Integer}
+    # Reference: Ramin Zabih and John Woodfill. Non-parametric Local
+    # Transforms for Computing Visual Correspondence. European Conference
+    # on Computer Vision, Stockholm, Sweden, May 1994, pages 151-158
+    # ** There is a type instability that makes this slower than it should
+    # ** be and the array slicing must be costly.
 
-# Reference: Ramin Zabih and John Woodfill. Non-parametric Local
-# Transforms for Computing Visual Correspondence. European Conference
-# on Computer Vision, Stockholm, Sweden, May 1994, pages 151-158
-
-# ** There is a type instability that makes this slower than it should
-# ** be and the array slicing must be costly.
-
-
-function grey2census{T<:Real,T2<:Integer}(img::Array{T,2}; window::Vector{T2}=[7,9], medianref = true)
-
-    (rows,cols) = size(img,1,2)    
+    (rows,cols) = size(img)
 
     nBits = window[1]*window[2]
     if nBits > 64
@@ -1490,17 +1448,15 @@ preferred option for small patch sizes.
 
 See also: grey2lbp(), grey2lbp!()
 """
-
-# Reference:
-# Michael Calonder, Vincent Lepetit, Christoph Strecha, and Pascal Fua.
-# BRIEF: Binary Robust Independent Elementary Features
-
-# To do: Constrain point selection to be within a circular region
-# around the centre pixel, rather than a square one.  This will make
-# the size and localisation invariant to orientation of the underlying
-# pixel data.
-
 function briefcoords(S, nPairs, UorG; disp=false)
+    # Reference:
+    # Michael Calonder, Vincent Lepetit, Christoph Strecha, and Pascal Fua.
+    # BRIEF: Binary Robust Independent Elementary Features
+    #
+    # To do: Constrain point selection to be within a circular region
+    # around the centre pixel, rather than a square one.  This will make
+    # the size and localisation invariant to orientation of the underlying
+    # pixel data.
     
     if iseven(S)
         error("Patch size must be an odd integer")
@@ -1596,14 +1552,13 @@ Use the Hamming distance to compare encoded pixel values when matching.
 
 See also: grey2lbp!(), grey2census(), briefcoords()
 """
-
 function grey2lbp(img::Array, rc::Array, window::Vector)
 
     if ndims(img) == 3
         error("Image must be grey scale")
     end
 
-    (rows,cols) = size(img,1,2)
+    (rows,cols) = size(img)
     lbpim = zeros(UInt64, rows, cols)
     
     nBits = div(size(rc,2),2)       # No of coordiante pairs / No of bits
@@ -1682,14 +1637,13 @@ Use the Hamming distance to compare encoded pixel values when matching.
 
 See also: grey2lbp(), grey2census(), briefcoords()
 """
-
 function grey2lbp!(lbpim::Array{UInt64,2}, img::Array, rc::Array, window::Vector)
 
     if ndims(img) == 3
         error("Image must be grey scale")
     end
 
-    (rows,cols) = size(img,1,2)
+    (rows,cols) = size(img)
     fill!(lbpim, zero(UInt64))
     
     nBits = div(size(rc,2),2)       # No of coordiante pairs / No of bits
@@ -1759,11 +1713,9 @@ Returns:  medimg - Median filtered image.
 ```
 
 """
-
-# ** To be rewritten using Huang's algorithm or Perreault and Hebert's
-# ** algorithm
-
-function medfilt2{T<:Real}(img::Array{T,2}, h::Int, w::Int)
+function medfilt2(img::Array{T,2}, h::Int, w::Int) where T <: Real
+    # ** To be rewritten using Huang's algorithm or Perreault and Hebert's
+    # ** algorithm
 
     if iseven(h) || iseven(w)
         error("Median filter region size must be odd")
@@ -1772,11 +1724,11 @@ function medfilt2{T<:Real}(img::Array{T,2}, h::Int, w::Int)
     return mapwindow(median!, img, (h,w))
 end
 
-function medfilt2(img::Array, sze::Tuple{Int, Int})
+function medfilt2(img::Array{T,2}, sze::Tuple{Int, Int}) where T <: Real
     return medfilt(img, sze[1], sze[2])
 end
 
-function medfilt2{T<:Real}(img::Array{T,2}, sze::Int)
+function medfilt2(img::Array{T,2}, sze::Int) where T <: Real
     medfilt2(img, sze, sze)
 end
 
@@ -1800,14 +1752,11 @@ Returns:  stdimg - Standard deviation image.
 ```
 
 """
-
 function stdfilt2(img::Array, h::Int, w::Int)
 
     if ndims(img) != 2
         error("Image must be 2D")
     end
-    
-    (rows,cols) = size(img,1,2)
     
     # Get mean image
     kern = Images.centered(Images.imaverage((h,w)))
@@ -1843,11 +1792,12 @@ Usage:  keypause()
 ```
 
 """
-
 function keypause()
     println("Hit return to continue, or 'x' to exit")
     a = readline()
-    if a[1] == 'x'
+    if isempty(a)
+        return
+    elseif a[1] == 'x'
         error("Exiting")  # Should be a nice way to do this
     else
         return 
@@ -1856,6 +1806,6 @@ end
 
 #----------------------------------------------------------------------
 
-function testinput{T<:Real}(img::Union{T, Array{T,2}, BitArray{2},Vector{T}})
+function testinput(img::Union{T, Array{T,2}, BitArray{2},Vector{T}}) where T<:Real
 println(typeof(img))
 end

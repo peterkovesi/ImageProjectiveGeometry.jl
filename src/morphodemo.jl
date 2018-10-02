@@ -1,11 +1,10 @@
 # Demonstrate/test morphological functions 
 
 using ImageProjectiveGeometry
-using PyPlot
-# using PerceptualColourMaps
+using FileIO, PyPlot
 
-
-img = imread("lena.tif");
+#img = imread("lena.tif");
+img = float(load("../sampleimages/lena.tif"))
 figure(10), imshow(img);
 set_cmap(ColorMap("gray"))
 title("Input image")
@@ -34,7 +33,6 @@ figure(12), imshow(imgd);
 title("Octagonal erode")
 keypause()
 
-
 img2d = imdilate(img2, "RECT", [19, 15]);
 figure(12), imshow(img2d);
 title("Dots: Rectangular dilate")
@@ -49,3 +47,5 @@ se = circularstruct(7);
 img2d = imdilate(img2, se);
 figure(12), imshow(img2d);
 title("Dots: Circular dilate")
+
+nothing

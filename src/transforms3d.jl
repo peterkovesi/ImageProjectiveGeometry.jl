@@ -15,8 +15,9 @@ all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
 
-PK August 2015
-   April  2017  Cleanups and optimisations
+PK August    2015
+   April     2017  Cleanups and optimisations
+   September 2018  Updated for v0.7/v1.0
 
 ---------------------------------------------------------------------=#
 
@@ -27,6 +28,8 @@ export angleaxis, angleaxis2matrix, angleaxisrotate, normaliseangleaxis
 export matrix2angleaxis, matrix2quaternion, quaternion2matrix
 export quaternion, quaternionconjugate, quaternionproduct, quaternionrotate
 export vector2quaternion
+
+using LinearAlgebra
 
 #---------------------------------------------------------------------
 """
@@ -41,7 +44,6 @@ Returns:    T     - 4x4 homogeneous transformation matrix.
 ```
 See also: rotx(), roty(), rotz(), invht()
 """
-
 function trans(x::Real, y::Real, z::Real)
 
   T = [ 1.0  0.0  0.0   float(x)
@@ -50,7 +52,7 @@ function trans(x::Real, y::Real, z::Real)
         0.0  0.0  0.0  1.0 ]
 end  
 
-function trans{Ty<:Real}(t::Array{Ty})
+function trans(t::Array{T1}) where T1<:Real
     
     if length(t) != 3
         error("Translation must be a 3x1 vector or array")
@@ -127,7 +129,7 @@ Returns:    Tinv - inverse
 ```
 See also: trans(), rotx(), roty(), rotz()
 """
-function invht{Ty<:Real}(T::Array{Ty,2})
+function invht(T::Array{T1,2}) where T1 <: Real
     
     if size(T) != (4,4)
         error("T must be 4 x 4")
@@ -152,7 +154,7 @@ Returns:   T - 4x4 Homogeneous transformation matrix.
 ```
 See also: matrix2angleaxis(), angleaxisrotate(), angleaxis(), normaliseangleaxis()
 """
-function  angleaxis2matrix{Ty<:Real}(t::Vector{Ty})
+function  angleaxis2matrix(t::Vector{T1}) where T1 <: Real
 
     if length(t) != 3
         error("Angle-axis must be a 3-vector")
@@ -270,10 +272,8 @@ The input v is assumed inhomogeneous if the number of rows is equal to
 size(P,2) - 1
 
 """
-
-# ? Should normalisation of scale test for points at infinity ?
-
 function homotrans(P::Array, v::Array; checkinf = false)
+    # ? Should normalisation of scale test for points at infinity ?
     
     (dim, nPts) = size(v,1,2)
 
@@ -327,7 +327,6 @@ function homotrans(P::Array, v::Array; checkinf = false)
             end
         end
 
-        
     else
         error("Transformation matrix and point data dimensions do not match")
     end
@@ -351,23 +350,22 @@ Returns: euler1 = [phi1, theta1, psi1] - the 1st solution and,
 ```
 See also: invrpy(), invht(), rotx(), roty(), rotz()
 """
-#=
- Reference: Richard P. Paul  
- Robot Manipulators: Mathematics, Programming and Control.
- MIT Press 1981. Page 68
-=#
+function inveuler(T::Array{T1,2}) where T1 <: Real
+    #=
+    Reference: Richard P. Paul  
+    Robot Manipulators: Mathematics, Programming and Control.
+    MIT Press 1981. Page 68
+    =#
 
-function inveuler{Ty<:Real}(T::Array{Ty,2})
-
-    phi1 = atan2(T[2,3], T[1,3])
+    phi1 = atan(T[2,3], T[1,3])
     phi2 = phi1 + pi
     
-    theta1 = atan2(cos(phi1)*T[1,3] + sin(phi1)*T[2,3], T[3,3])
-    theta2 = atan2(cos(phi2)*T[1,3] + sin(phi2)*T[2,3], T[3,3])
+    theta1 = atan(cos(phi1)*T[1,3] + sin(phi1)*T[2,3], T[3,3])
+    theta2 = atan(cos(phi2)*T[1,3] + sin(phi2)*T[2,3], T[3,3])
     
-    psi1 = atan2(-sin(phi1)*T[1,1] + cos(phi1)*T[2,1], 
+    psi1 = atan(-sin(phi1)*T[1,1] + cos(phi1)*T[2,1], 
                  -sin(phi1)*T[1,2] + cos(phi1)*T[2,2])
-    psi2 = atan2(-sin(phi2)*T[1,1] + cos(phi2)*T[2,1], 
+    psi2 = atan(-sin(phi2)*T[1,1] + cos(phi2)*T[2,1], 
                  -sin(phi2)*T[1,2] + cos(phi2)*T[2,2])
     
     euler1 = [phi1, theta1, psi1]
@@ -391,26 +389,24 @@ Returns:  rpy1 = [phi1, theta1, psi1] - the 1st solution and
 ```
 See also: inveuler(), invht(), rotx(), roty(), rotz()
 """
-#=
-  Reference: Richard P. Paul  
-  Robot Manipulators: Mathematics, Programming and Control.
-  MIT Press 1981. Page 70
-=#
-
-function invrpy{T<:Real}(RPY::Array{T,2})
-
+function invrpy(RPY::Array{T,2}) where T <: Real
+    #=
+    Reference: Richard P. Paul  
+    Robot Manipulators: Mathematics, Programming and Control.
+    MIT Press 1981. Page 70
+    =#
     # Z rotation 
-    phi1 = atan2(RPY[2,1], RPY[1,1])
+    phi1 = atan(RPY[2,1], RPY[1,1])
     phi2 = phi1 + pi
     
     # Y rotation
-    theta1 = atan2(-RPY[3,1], cos(phi1)*RPY[1,1] + sin(phi1)*RPY[2,1])
-    theta2 = atan2(-RPY[3,1], cos(phi2)*RPY[1,1] + sin(phi2)*RPY[2,1])
+    theta1 = atan(-RPY[3,1], cos(phi1)*RPY[1,1] + sin(phi1)*RPY[2,1])
+    theta2 = atan(-RPY[3,1], cos(phi2)*RPY[1,1] + sin(phi2)*RPY[2,1])
     
     # X rotation
-    psi1 = atan2(sin(phi1)*RPY[1,3] - cos(phi1)*RPY[2,3], 
+    psi1 = atan(sin(phi1)*RPY[1,3] - cos(phi1)*RPY[2,3], 
                 -sin(phi1)*RPY[1,2] + cos(phi1)*RPY[2,2]);
-    psi2 = atan2(sin(phi2)*RPY[1,3] - cos(phi2)*RPY[2,3], 
+    psi2 = atan(sin(phi2)*RPY[1,3] - cos(phi2)*RPY[2,3], 
                 -sin(phi2)*RPY[1,2] + cos(phi2)*RPY[2,2]);
     
     rpy1 = [phi1, theta1, psi1]
@@ -439,7 +435,7 @@ function matrix2angleandaxis(T::Array)
     R = T[1:3, 1:3]   # Extract rotation part of T
     
     # Trap case where rotation is very small.  ( See angleaxis2matrix() )
-    Reye = R-eye(3)
+    Reye = R - I
     if norm(Reye) < 1e-8
         t = [T[3,2], T[1,3], T[2,1]]
         return norm(Reye), t
@@ -447,29 +443,30 @@ function matrix2angleandaxis(T::Array)
 
     # Otherwise find rotation axis as the eigenvector having unit eigenvalue
     # Solve (R-I)v = 0
-    (eigval, eigvec) = eig(Reye)
+#    (eigval, eigvec) = eig(Reye)
+    F = eigen(Reye)
 
     # Find index of eigenvalue with smallest magnitude, the
     # corresponding eigenvector will be the axis.
-    absval = abs.(eigval)
+    absval = abs.(F.values)
     ind = sortperm(absval)          # Find index of smallest one
     if absval[ind[1]] > 0.001       # Hopefully it is close to 0
-        warn("Rotation matrix is dubious")
+        @warn("Rotation matrix is dubious")
     end
     
-    axis = real(eigvec[:,ind[1]])      # Extract appropriate eigenvector
+    axis = real(F.vectors[:,ind[1]])    # Extract appropriate eigenvector
 
     if abs(norm(axis) - 1.0) > .0001    # Debug
-        warn("Non unit rotation axis")
+        @warn("Non unit rotation axis")
     end
     
     # Now determine the rotation angle
-    twocostheta = trace(R)-1.0
+    twocostheta = tr(R)-1.0
     twosinthetav = [R[3,2]-R[2,3], R[1,3]-R[3,1], R[2,1]-R[1,2]]
-    twosintheta = vecdot(axis',twosinthetav)  # use vecdot to create a scalar
+    twosintheta = dot(axis, twosinthetav)
 
     # Note use of twosinetheta to convert it from a 1x1 matrix to a scalar
-    theta = atan2(twosintheta, twocostheta)
+    theta = atan(twosintheta, twocostheta)
 
     return theta, axis
 end
@@ -587,7 +584,6 @@ Returns:    t2 - Normalised angle-axis descriptor
 ```
 See also: matrix2angleaxis(), angleaxis(), angleaxis2matrix(), angleaxisrotate()
 """
-
 function normaliseangleaxis(t::Vector)
     
     if length(t) != 3
@@ -597,10 +593,10 @@ function normaliseangleaxis(t::Vector)
     theta = norm(t)
     axis = t/theta
     
-    theta = rem(theta, 2.*pi)  # Remove multiples of 2pi
+    theta = rem(theta, 2pi)  # Remove multiples of 2pi
     
     if theta > pi              # Note theta cannot be -ve
-        theta = theta - 2*pi; 
+        theta = theta - 2pi; 
     end
     
     return theta*axis
@@ -699,22 +695,21 @@ Returns:   vnew - rotated vector.
 ```
 See also: matrix2quaternion(), quaternion2matrix(), quaternion()
 """
-#=
-% Code forms the equivalent 3x3 rotation matrix from the quaternion and
-% applies it to a vector 
-%
-% Note that Qw^2 + Qi^2 + Qj^2 + Qk^2 = 1
-% So the top-left entry of the rotation matrix of
-%   Qw^2 + Qi^2 - Qj^2 - Qk^2
-% can be rewritten as
-%   Qw^2 + Qi^2 + Qj^2 + Qk^2 - 2Qj^2 - 2Qk^2
-% = 1 - 2Qj^2 - 2Qk^2
-%
-% Similar optimization applies to the other diagonal elements
-=#
-
 function quaternionrotate(Q::Vector, v::Vector)
-
+    #=
+    % Code forms the equivalent 3x3 rotation matrix from the quaternion and
+    % applies it to a vector 
+    %
+    % Note that Qw^2 + Qi^2 + Qj^2 + Qk^2 = 1
+    % So the top-left entry of the rotation matrix of
+    %   Qw^2 + Qi^2 - Qj^2 - Qk^2
+    % can be rewritten as
+    %   Qw^2 + Qi^2 + Qj^2 + Qk^2 - 2Qj^2 - 2Qk^2
+    % = 1 - 2Qj^2 - 2Qk^2
+    %
+    % Similar optimization applies to the other diagonal elements
+    =#
+    
     if length(Q) != 4 
         error("Quaternion must be a 4 vector")
     end

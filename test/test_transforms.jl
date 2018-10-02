@@ -1,4 +1,5 @@
 # Test transforms.jl
+using Test, LinearAlgebra
 
 println("testing transforms")
 
@@ -39,13 +40,13 @@ T2 = rotz(euler2[1])*roty(euler2[2])*rotz(euler2[3])
 v = [1,-2,3]
 T = rotz(yaw)*roty(pitch)*rotx(roll) * trans(v)
 
-@test maximum(abs.(invht(T)*T - eye(4))) < tol
+@test maximum(abs.(invht(T)*T - I)) < tol
 @test maximum(abs.(trans(v) - trans(v[1],v[2],v[3]))) < tol
 
 # angleaxis, angleaxis2matrix, matrix2angleaxis
 # matrix2quaternion, quaternion2matrix
-T1 = rotz(yaw)*roty(pitch)*rotx(roll) 
-ax = matrix2angleaxis(T)
+T1 = rotz(yaw)*roty(pitch)*rotx(roll)
+ax = matrix2angleaxis(T1)
 T2 = angleaxis2matrix(ax)
 @test maximum(abs.(T2-T1)) < tol
 

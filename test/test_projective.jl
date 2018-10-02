@@ -1,4 +1,5 @@
 # Test projective.jl
+using Test, Statistics, LinearAlgebra
 
 println("testing projective")
 
@@ -69,7 +70,7 @@ hx = hnormalise(100*rand(3,10))
 @test abs(mean(xn[2,:])) < tol
 
 # mean distance from origin is sqrt(2)
-@test abs(mean(sqrt.(sum(xn[1:2,:].^2,1))) - sqrt(2)) < tol
+@test abs(mean(sqrt.(sum(xn[1:2,:].^2, dims=1))) - sqrt(2)) < tol
 
 # check transform works
 @test maximum(abs.(xn - T*hx)) < tol
@@ -78,9 +79,9 @@ hx = hnormalise(100*rand(3,10))
 a = rand(3)
 b = rand(3)
 aXb = ImageProjectiveGeometry.skew(a)*b
-@test maximum(abs.(aXb - cross(a,b))) < tol
+@test maximum(abs.(aXb .- cross(a,b))) < tol
 
-@test maximum(abs.(hnormalise(aXb) - hcross(a,b))) < tol
+@test maximum(abs.(hnormalise(aXb) .- hcross(a,b))) < tol
 
 # homography1d, homography2d
 

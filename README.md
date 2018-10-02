@@ -21,9 +21,7 @@ help?> ImageProjectiveGeometry  # Lists a summary of the package functions
 
 ## Summary
 
-This Image Projective Geometry package is intended as a starting point
-for the development of a library of projective geometry functions for
-computer vision in Julia.
+This Image Projective Geometry package is intended as a starting point for the development of a library of projective geometry functions for computer vision in Julia.
 
 Currently the package consists of a number of components which
 ultimately could/should be separated off into individual packages or
@@ -39,21 +37,12 @@ external dependencies and make it as self contained as possible.
 * [**projective**](doc/projective.md) Defines a camera structure,
 implements image projection functions, functions for computing
 homographies and fundamental matrices, stereo solution, etc.
-* [**cornerfeatures**](doc/cornerfeatures.md) Implementations of a number
-of corner detectors.  Ultimately could be contributed to the Images
-package.
-* [**ransac**](doc/ransac.md) A generic implementation of RANSAC along
-with a collection of specific functions that use RANAC for robust
-estimation of homographies and fundamental matrices, and for fitting
-lines and planes etc.
+* [**cornerfeatures**](doc/cornerfeatures.md) Implementations of a number of corner detectors.  Note some of these duplicate what is available in the Images package.
+* [**ransac**](doc/ransac.md) A generic implementation of RANSAC along with a collection of specific functions that use RANAC for robust estimation of homographies and fundamental matrices, and for fitting lines and planes etc.
 * [**transforms**](doc/transforms.md) Functions for constructing,
 applying, and decomposing homogeneous transforms, angle-axis
 descriptors, and quaternions.
-* [**utilities**](doc/utilities.md) Miscellaneous image processing functions
-including nonmaximal suppression, image derivative computation and
-efficient morphological dilation and erosion using rectangular and
-octagonal structuring elements.  There is also a basic correlation
-matcher.  Ultimately could be contributed to the Images package.
+* [**utilities**](doc/utilities.md) Miscellaneous image processing functions including nonmaximal suppression, image derivative computation and morphological dilation and erosion using rectangular and octagonal structuring elements.  There is also a basic correlation matcher.  
 * [**geometry**](doc/geometry.md) Functions for some basic
 geometric operations: minimum distance between 3D rays, intersection
 of circles, convex polygons etc.
@@ -76,8 +65,7 @@ though feature matching probably belongs in its own package(s)
  [http://www.peterkovesi.com/matlabfns](http://www.peterkovesi.com/matlabfns/index.html)
  Accordingly some of the code is still MATLABesque in nature.  There
  are, no doubt, many optimisations that could be made and type
- instabilities to be eliminated. Pull requests to make the code more Julian
- are welcome.
+ instabilities to be eliminated. Pull requests to make the code more Julian  are welcome.
 
 
 ## Supplementary Material

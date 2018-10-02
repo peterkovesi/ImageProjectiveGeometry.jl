@@ -15,8 +15,8 @@ all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
 
-PK February 2016
-
+PK February  2016
+   September 2018 Updated for v0.7/v1.0
 ---------------------------------------------------------------------=#
 
 export ransac
@@ -24,6 +24,7 @@ export ransacfithomography, ransacfitfundmatrix, ransacfitaffinefundmatrix
 export ransacfitplane, ransacfitline
 export iscolinear, fitline2d, fitline3d, fitplane
 
+using Random
 #---------------------------------------------------------------------
 """
 ransac - Robustly fits a model to data with the RANSAC algorithm
@@ -103,28 +104,18 @@ Returns:
 For an example of the use of this function see ransacfithomography() or
 ransacfitplane() 
 """
-#=
-References:
-   M.A. Fishler and  R.C. Boles. "Random sample concensus: A paradigm
-   for model fitting with applications to image analysis and automated
-   cartography". Comm. Assoc. Comp, Mach., Vol 24, No 6, pp 381-395, 1981
-
-   Richard Hartley and Andrew Zisserman. "Multiple View Geometry in
-   Computer Vision". pp 101-113. Cambridge University Press, 2001
-
-May      2003 - Original version in MATLAB
-February 2004 - Tidied up.
-August   2005 - Specification of distfn changed to allow model fitter to
-                return multiple models from which the best must be selected
-Sept     2006 - Random selection of data points changed to ensure duplicate
-                points are not selected.
-December 2008 - Octave compatibility mods
-June     2009 - Argument 'MaxTrials' corrected to 'maxTrials'!
-February 2016 - Ported to Julia
-=#
-
 function ransac(x, fittingfn, distfn, degenfn, s, t, feedback = false, 
                 maxDataTrials = 1000, maxTrials = 1000, p = 0.99)
+
+    #=
+    References:
+    M.A. Fishler and  R.C. Boles. "Random sample concensus: A paradigm
+    for model fitting with applications to image analysis and automated
+    cartography". Comm. Assoc. Comp, Mach., Vol 24, No 6, pp 381-395, 1981
+
+    Richard Hartley and Andrew Zisserman. "Multiple View Geometry in
+    Computer Vision". pp 101-113. Cambridge University Press, 2001
+    =#
 
     (rows, npts) = size(x)
 
@@ -254,13 +245,6 @@ Returns:
 ```
 See Also: ransac(), homography2d(), homography1d()
 """
-
-#=
-February 2004 - original version
-July     2004 - error in denormalising corrected (thanks to Andrew Stein)
-August   2005 - homogdist2d modified to fit new ransac specification.
-=#
-
 function ransacfithomography(x1i, x2i, t::Real)
     
     # Define some subfunctions
@@ -285,10 +269,10 @@ function ransacfithomography(x1i, x2i, t::Real)
         Hx1    = hnormalise(Hx1)
         invHx2 = hnormalise(invHx2) 
         
-        d2 = sum((x1-invHx2).^2, 1)  + sum((x2-Hx1).^2, 1)
-        inliers = find(abs(d2) .< t)    
+        d2 = sum((x1-invHx2).^2, dims=1) .+ sum((x2-Hx1).^2, dims=1)
+        inliers = findall(abs.(d2[:]) .< t)
         return inliers, H
-    end    
+    end
     
     #----------------------------------------------------------------------
     # Function to determine if a set of 4 pairs of matched  points give rise
@@ -299,7 +283,7 @@ function ransacfithomography(x1i, x2i, t::Real)
     function isdegenerate(x)
         
         (rows, npts) = size(x)
-        assert(npts == 4)
+        @assert(npts == 4)
 
         x1 = x[1:3,:]    # Extract x1 and x2 from x
         x2 = x[4:6,:]    
@@ -396,10 +380,6 @@ Returns:
 ```
 See also: ransac(), fundmatrix()
 """
-
-# February 2004  Original version
-# August   2005  Distance error function changed to match changes in RANSAC
-
 function ransacfitfundmatrix(x1i, x2i, t::Real, feedback::Bool = false)
 
     # Define some subfunctions
@@ -438,7 +418,7 @@ function ransacfitfundmatrix(x1i, x2i, t::Real, feedback::Bool = false)
 	        d =  x2tFx1.^2 ./ 
 		vec(Fx1[1,:].^2 + Fx1[2,:].^2 + Ftx2[1,:].^2 + Ftx2[2,:].^2)
 	    
-	        inliers = find(abs(d) .< t)     # Indices of inlying points
+	        inliers = findall(abs.(d[:]) .< t) # Indices of inlying points
 	        
 	        if length(inliers) > ninliers   # Record best solution
 		    ninliers = length(inliers)
@@ -460,8 +440,8 @@ function ransacfitfundmatrix(x1i, x2i, t::Real, feedback::Bool = false)
 	    d =  x2tFx1.^2 ./ 
 	    vec(Fx1[1,:].^2 + Fx1[2,:].^2 + Ftx2[1,:].^2 + Ftx2[2,:].^2)
 	    
-	    bestInliers = find(abs(d) .< t)     # Indices of inlying points
-	    bestF = F                          # Copy F directly to bestF
+	    bestInliers = findall(abs.(d[:]) .< t) # Indices of inlying points
+	    bestF = F                           # Copy F directly to bestF
         end
 
         return bestInliers, bestF
@@ -553,10 +533,6 @@ Returns:
 ```
 See also: ransac(), fundmatrix(), affinefundmatrix()
 """
-
-# February 2004  Original version
-# August   2005  Distance error function changed to match changes in RANSAC
-
 function ransacfitaffinefundmatrix(x1i, x2i, t::Real, feedback::Bool = false)
 
     # Define some subfunctions
@@ -584,7 +560,7 @@ function ransacfitaffinefundmatrix(x1i, x2i, t::Real, feedback::Bool = false)
         d =  x2tFx1.^2 ./ 
 	vec(Fx1[1,:].^2 + Fx1[2,:].^2 + Ftx2[1,:].^2 + Ftx2[2,:].^2)
         
-        inliers = find(abs(d) .< t)     # Indices of inlying points
+        inliers = findall(abs.(d[:]) .< t)     # Indices of inlying points
         return inliers, F
     end
 
@@ -675,14 +651,6 @@ Returns:
 ```
 See also:  ransac(), fitplane()
 """
-#=
-June 2003 - Original version.
-Feb  2004 - Modified to use separate ransac function
-Aug  2005 - planeptdist modified to fit new ransac specification
-Dec  2008 - Much faster distance calculation in planeptdist (thanks to
-            Alastair Harrison) 
-=#
-
 function ransacfitplane(XYZ, t::Real, feedback::Bool = false)
 
     # Define some sub functions
@@ -709,10 +677,10 @@ function ransacfitplane(XYZ, t::Real, feedback::Bool = false)
         # to every X[:,i] with the unit plane normal.  This will be the
         # perpendicular distance from the plane for each point
         for i=1:3
-	    d = d + vec(X[i,:]-P[i,1])*n[i] 
+	    d = d .+ vec(X[i,:] .- P[i,1])*n[i] 
         end
         
-        inliers = find(abs(d) .< t)
+        inliers = findall(abs.(d[:]) .< t)
         
         return inliers, P
     end    
@@ -789,11 +757,10 @@ Returns:.
 ```
 See also:  ransac(), fitplane(), ransacfitplane()
 """
-# Aug  2006 - created ransacfitline from ransacfitplane
-#             author: Felix Duvallet
-
 function ransacfitline(XYZ, t::Real, feedback::Bool = false)
-
+    # Aug  2006 - created ransacfitline from ransacfitplane
+    #             author: Felix Duvallet
+    
     # First define some internal functions
     # ------------------------------------------------------------------------
     # Function to define a line given 2 data points as required by
@@ -838,7 +805,7 @@ function ransacfitline(XYZ, t::Real, feedback::Bool = false)
             d[i] = norm(lambda*p1 + (1-lambda)*p2 - p3)
         end
         
-        inliers = find(abs.(d) .< t)
+        inliers = findall(abs.(d[:]) .< t)
         return inliers, L
     end    
 
@@ -902,10 +869,6 @@ Returns:
        r  -  true if points are co-linear, false otherwise
 ```
 """
-# February 2004
-# January  2005 - modified to allow for homogeneous points of arbitrary
-#                 scale (thanks to Michael Kirchhof)
-
 function iscolinear(p1i::Vector, p2i::Vector, p3i::Vector, homog::Bool = false)
 
     if (length(p1i) != length(p2i))  || (length(p1i) != length(p3i)) || !(length(p1i) == 2 || length(p1i) == 3)
@@ -974,10 +937,6 @@ use
 ```
 Note, however, that this assumes c[2] is not zero
 """
-# June      2003 - Original version
-# September 2004 - Rescaling to allow simple distance calculation.
-# November  2008 - Normalising of coordinates added to condition the solution.
-
 function fitline2d(XYi)
     
     (rows,npts) = size(XYi)
@@ -1028,7 +987,7 @@ function fitline2d(XYi)
     
     # Calculate the distances from the fitted line to the supplied
     # data points
-    dist = abs(C[1]*XY[1,:] + C[2]*XY[2,:] + C[3])
+    dist = abs.(C[1]*XY[1,:] .+ C[2]*XY[2,:] .+ C[3])
     
     return C, dist
 end
@@ -1051,29 +1010,28 @@ Returns: L - 3x2 matrix consisting of the two endpoints of the line
              eigenvalues.
 ```
 """
-# Author: Felix Duvallet (CMU)
-# August 2006
-
 function fitline3d(XYZ)
-
+    # Author: Felix Duvallet (CMU)
+    # August 2006
+    
     # Since the covariance matrix should be 3x3 (not NxN), need
     # to take the transpose of the points.
     
     # find mean of the points
-    mu = mean(XYZ', 1)
+    mu = mean(XYZ', dims=1)
     
     # covariance matrix
     C = cov(XYZ')
     
     # get the eigenvalues and eigenvectors
-    (D, V) = eig(C)
+    F = eigen(C)
     
     # largest eigenvector is in the last column
-    col = size(V, 2)  # get the number of columns
+    col = size(F.vectors, 2)  # get the number of columns
     
     # get the last eigenvector column and the last eigenvalue
-    eVec = V[:, col]
-    eVal = D[col]
+    eVec = F.vectors[:, col]
+    eVal = F.values[col]
 
     L = zeros(3,2)    
     # start point - center about mean and scale eVector by eValue
@@ -1098,9 +1056,7 @@ Returns: B   - 4x1 array of plane coefficients in the form
 ```
 See also: ransacfitplane()
 """
-# June 2003
-
-function fitplane{T<:Real}(XYZ::Array{T,2})
+function fitplane(XYZ::Array{T,2}) where T <: Real
     
     (rows, npts) = size(XYZ)    
     

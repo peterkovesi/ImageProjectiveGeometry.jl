@@ -16,8 +16,9 @@ all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
 
-PK February 2016
-   April 2017  Extra functions added, code cleanup.
+PK February  2016
+   April     2017 Extra functions added, code cleanup.
+   September 2018 updated for v0.7/v1.0
 
 ---------------------------------------------------------------------=#
 
@@ -39,8 +40,7 @@ export transformedimagebounds
 export idealimagepts, solvestereopt, undistortimage
 export hline, plotcamera
 
-using Interpolations
-using PyPlot
+using LinearAlgebra, Statistics, Printf, Interpolations, PyPlot
 
 #=
 imTrans.m 
@@ -98,8 +98,7 @@ Constructors:
 ```
 
 """
-
-type Camera
+mutable struct Camera
     fx::Float64           # Focal length.
     fy::Float64
     ppx::Float64          # Principal point.
@@ -136,7 +135,7 @@ function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0,
 end
 
 # Contructor that takes a projection matrix
-function Camera{T<:AbstractFloat}(P::Array{T})
+function Camera(P::Array{T}) where T <: AbstractFloat
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
     end
@@ -162,13 +161,7 @@ Returns:
 See also: Camera(), camstruct2projmatrix()
 
 """
-#=
-PK September 2008
-        June 2015    - Ported to Julia
-=#
-# Projection matrix version
-
-function cameraproject(P::Array, pt::Array)
+function cameraproject(P::Array, pt::Array) # Projection matrix version
 
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
@@ -215,10 +208,8 @@ Returns:
 ```
 See also: Camera(), camstruct2projmatrix()
 """
-
-# Camera structure version
-
 function cameraproject(C::Camera, pta::Array; computevisibility = false)
+    # Camera structure version
 
     pt = copy(pta) # Make local copy
     rows = size(pt,1)
@@ -245,7 +236,7 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     # First translate world frame origin to match camera origin.  This is
     # the Tp_w bit.  
     for n = 1:3
-        pt[n,:] = pt[n,:] - C.P[n] 
+        pt[n,:] = pt[n,:] .- C.P[n] 
     end
     
     # Then rotate to camera frame using Rc_w
@@ -255,23 +246,23 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     # Generate normalized coords
     x_n = pt[1:1,:]./pt[3:3,:]
     y_n = pt[2:2,:]./pt[3:3,:]
-    rsqrd = x_n.^2 + y_n.^2  # radius squared from centre
+    rsqrd = x_n.^2 .+ y_n.^2  # radius squared from centre
     
     # Radial distortion factor
-    r_d = 1.0 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
+    r_d = 1.0 .+ C.k1*rsqrd .+ C.k2*rsqrd.^2 .+ C.k3*rsqrd.^3
     
     # Tangential distortion component
-    dtx = 2*C.p1*x_n.*y_n         + C.p2*(rsqrd + 2*x_n.^2)
-    dty = C.p1*(rsqrd + 2*y_n.^2) + 2*C.p2*x_n.*y_n
+    dtx = 2*C.p1*x_n.*y_n          .+ C.p2*(rsqrd .+ 2*x_n.^2)
+    dty = C.p1*(rsqrd .+ 2*y_n.^2) .+ 2*C.p2*x_n.*y_n
     
     # Obtain lens distorted coordinates
-    x_d = r_d.*x_n + dtx
-    y_d = r_d.*y_n + dty   
+    x_d = r_d.*x_n .+ dtx
+    y_d = r_d.*y_n .+ dty   
     
     # Finally project to pixel coordinates
     # Note skew represents the 2D shearing coefficient times fx
-    x_p = C.ppx + x_d*C.fx + y_d*C.skew
-    y_p = C.ppy + y_d*C.fy
+    x_p = C.ppx .+ x_d*C.fx .+ y_d*C.skew
+    y_p = C.ppy .+ y_d*C.fy
     
     xy = [x_p
 	  y_p]
@@ -284,15 +275,15 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
 #                      (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
 
 # Interim code that runs under 0.5 and 0.6
-            visible = Array{Bool}(length(x_p))
+            visible = Array{Bool}(undef, length(x_p))
             for n = 1:length(x_p)
                 visible[n] = (x_p[n] >= 1.0) && (x_p[n] <= convert(Float64,C.cols)) &&
                              (y_p[n] >= 1.0) && (y_p[n] <= convert(Float64,C.rows))
             end
 
         else
-            warn("Point visibility requested but Camera structure has no image size data")
-            visible = Array{Bool}(0)
+            @warn("Point visibility requested but Camera structure has no image size data")
+            visible = Array{Bool}(undef, 0)
         end
 
         return xy, visible
@@ -328,13 +319,9 @@ the forward distortion and then subtracting the distortion.
  
 See also Camera(), cameraproject()
 """
-#=
-PK May 2015
-=#
-
 function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
 
-    (dim, N) = size(xy, 1, 2)
+    (dim, N) = (size(xy,1), size(xy,2))  # xy might be a Vector
     if dim != 2
         error("Image xy data must be a 2 x N array")
     end
@@ -344,25 +331,25 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     # Subtract principal point and divide by focal length to get normalised,
     # distorted image coordinates.  Note skew represents the 2D shearing
     # coefficient times fx
-    y_d = (xy[2:2,:] - C.ppy)/C.fy
-    x_d = (xy[1:1,:] - C.ppx - y_d*C.skew)/C.fx
+    y_d = (xy[2:2,:] .- C.ppy)/C.fy
+    x_d = (xy[1:1,:] .- C.ppx .- y_d*C.skew)/C.fx
 
     # Radial distortion factor.  Here the squared radius is computed from the
     # already distorted coordinates.  The approximation we are making here is to
     # assume that the distortion is locally constant.
-    rsqrd = x_d.^2 + y_d.^2
-    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
+    rsqrd = x_d.^2 .+ y_d.^2
+    r_d = 1 .+ C.k1*rsqrd .+ C.k2*rsqrd.^2 .+ C.k3*rsqrd.^3
     
     # Tangential distortion component, again computed from the already distorted
     # coords.
-    dtx = 2*C.p1*x_d.*y_d         + C.p2*(rsqrd + 2*x_d.^2)
-    dty = C.p1*(rsqrd + 2*y_d.^2) + 2*C.p2*x_d.*y_d
+    dtx = 2*C.p1*x_d.*y_d          .+ C.p2*(rsqrd .+ 2*x_d.^2)
+    dty = C.p1*(rsqrd .+ 2*y_d.^2) .+ 2*C.p2*x_d.*y_d
     
     # Subtract the tangential distortion components and divide by the radial
     # distortion factor to get an approximation of the undistorted normalised
     # image coordinates (with no skew)
-    x_n = (x_d - dtx)./r_d
-    y_n = (y_d - dty)./r_d
+    x_n = (x_d .- dtx)./r_d
+    y_n = (y_d .- dty)./r_d
 
     # Define a set of points at the normalised distance of z = 1 from the
     # principal point, these define the viewing rays in terms of the camera
@@ -382,7 +369,7 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     pt = zeros(3,N)
     for n = 1:N
         k = (dot(planeP, planeN) - dot(C.P, planeN)) / dot(ray[:,n], planeN)
-        pt[:,n] = C.P + k*ray[:,n]
+        pt[:,n] .= C.P .+ k*ray[:,n]
     end
 
     return pt
@@ -401,7 +388,7 @@ function imagept2plane(Proj::Array, cameraP::Vector, xy::Vector, planeP::Vector,
     # pseudoinverse of Proj.
     pt = Proj\[xy[1], xy[2], 1]
     pt /= pt[4]
-    ray = pt[1:3] - cameraP   # Ray from camera centre to point
+    ray = pt[1:3] .- cameraP   # Ray from camera centre to point
 
     # The point of intersection of the ray with the plane will be 
     #   pt = cameraP + k*ray    where k is to be determined
@@ -412,7 +399,7 @@ function imagept2plane(Proj::Array, cameraP::Vector, xy::Vector, planeP::Vector,
     # Rearranging this equation allows k to be solved
     k = (dot(planeP, planeN) - dot(cameraP, planeN)) / dot(ray, planeN)
 
-    return  cameraP + k*ray
+    return  cameraP .+ k*ray
 end
 
 
@@ -441,7 +428,6 @@ corner coordinates of the mappedimage buffer.  This is then applied to
 img to project it into mappedimg.
 
 """
-
 function mapimage2plane!(mappedimg::Array{Float64,2}, rect3Dpts::Array{Float64,2}, 
                                          img::Array{Float64,2}, P::Array{Float64,2})
 
@@ -487,7 +473,6 @@ Returns:
 
 See also: imagept2plane()
 """
-
 function imagecorners2plane(C::Camera, planeP::Vector, planeN::Vector)
 
     xy = [0  C.cols  C.cols   0
@@ -520,10 +505,6 @@ the forward distortion and then subtracting the distortion.
  
 See also imagept2ray(), Camera(), cameraproject()
 """
-#=
-PK May 2015
-=#
-
 function imagept2ray!(ray, C::Camera, x, y)
 
     # Reverse the projection process as used by cameraproject()
@@ -531,25 +512,25 @@ function imagept2ray!(ray, C::Camera, x, y)
     # Subtract principal point and divide by focal length to get normalised,
     # distorted image coordinates.  Note skew represents the 2D shearing
     # coefficient times fx
-    y_d = (y - C.ppy)/C.fy
-    x_d = (x - C.ppx - y_d*C.skew)/C.fx
+    y_d = (y .- C.ppy)/C.fy
+    x_d = (x .- C.ppx .- y_d*C.skew)/C.fx
 
     # Radial distortion factor.  Here the squared radius is computed from the
     # already distorted coordinates.  The approximation we are making here is to
     # assume that the distortion is locally constant.
-    rsqrd = x_d.^2 + y_d.^2
-    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
+    rsqrd = x_d.^2 .+ y_d.^2
+    r_d = 1 .+ C.k1*rsqrd .+ C.k2*rsqrd.^2 .+ C.k3*rsqrd.^3
     
     # Tangential distortion component, again computed from the already distorted
     # coords.
-    dtx = 2*C.p1*x_d.*y_d         + C.p2*(rsqrd + 2*x_d.^2)
-    dty = C.p1*(rsqrd + 2*y_d.^2) + 2*C.p2*x_d.*y_d
+    dtx = 2*C.p1*x_d.*y_d          .+ C.p2*(rsqrd .+ 2*x_d.^2)
+    dty = C.p1*(rsqrd .+ 2*y_d.^2) .+ 2*C.p2*x_d.*y_d
     
     # Subtract the tangential distortion components and divide by the radial
     # distortion factor to get an approximation of the undistorted normalised
     # image coordinates (with no skew)
-    x_n = (x_d - dtx)./r_d
-    y_n = (y_d - dty)./r_d
+    x_n = (x_d .- dtx)./r_d
+    y_n = (y_d .- dty)./r_d
 
     # [x_n, y_n, 1] define a set of points at the normalised distance
     # of z = 1 from the principal point, these define the viewing rays
@@ -583,7 +564,6 @@ the forward distortion and then subtracting the distortion.
  
 See also imagept2ray!(), Camera(), cameraproject()
 """
-
 function imagept2ray(C, x, y)
     ray = zeros(3)
     imagept2ray!(ray, C, x, y)
@@ -650,14 +630,8 @@ Returns:
 ```
 See also: rq3()
 """
-#=
-Reference: Hartley and Zisserman 2nd Ed. pp 155-164
-
-October  2010  Original version
-November 2013  Description of rotation matrix R corrected (transposed)
-=#
-
-function decomposecamera{T1<:Real}(P::Array{T1,2})
+function decomposecamera(P::Array{T1,2}) where T1 <: AbstractFloat
+    # Reference: Hartley and Zisserman 2nd Ed. pp 155-164
 
     if size(P) != (3,4) 
         error("Projection matrix must be 3 x 4")
@@ -699,7 +673,7 @@ function decomposecamera{T1<:Real}(P::Array{T1,2})
     
     # Check that R is right handed, if not give warning
     if dot(cross(Rc_w[:,1], Rc_w[:,2]), Rc_w[:,3]) < 0.0
-        info("Warning: rotation matrix is left handed")
+        @warn("Note rotation matrix is left handed")
     end
 
     return K, Rc_w, Pc, pp, pv
@@ -721,15 +695,14 @@ elements of R are +ve.
 
 See also: decomposecamera()
 """
-#=
-Follows algorithm given by Hartley and Zisserman 2nd Ed. A4.1 p 579
-
-October  2010
-February 2014  Incorporated modifications suggested by Mathias Rothermel to
-               avoid potential division by zero problems
-=#
-
-function rq3{T<:Real}(A::Array{T,2})
+function rq3(A::Array{T,2}) where T <: Real
+    #=
+    Follows algorithm given by Hartley and Zisserman 2nd Ed. A4.1 p 579
+    
+    October  2010
+    February 2014  Incorporated modifications suggested by Mathias Rothermel to
+    avoid potential division by zero problems
+    =#
     
     if size(A) != (3,3)
         error("A must be 3x3")
@@ -784,13 +757,11 @@ Returns:
 ```
 See also: makeinhomogeneous(), hnormalise()
 """
-# April 2010
-
-function makehomogeneous{T<:Real}(x::Array{T,2})
+function makehomogeneous(x::Array{T,2}) where T <: Real
     return [x; ones(1,size(x,2))]
 end
 
-function makehomogeneous{T<:Real}(x::Vector{T})
+function makehomogeneous(x::Vector{T}) where T <: Real
     return [x;1]
 end
 
@@ -811,14 +782,14 @@ of these points are simply returned minus their scale coordinate.
 
 See also: makehomogeneous(), hnormalise()
 """
-function makeinhomogeneous{T<:Real}(hx::Array{T,2})
+function makeinhomogeneous(hx::Array{T,2}) where T <: Real
     
     x = hnormalise(hx)  # Normalise to scale of one
     x = x[1:end-1,:]    # Extract all but the last row
     return x
 end
 
-function makeinhomogeneous{T<:Real}(hx::Vector{T})
+function makeinhomogeneous(hx::Vector{T}) where T <: Real
     
     x = hnormalise(hx)  # Normalise to scale of one
     x = x[1:end-1]      # Extract all but the last row
@@ -843,8 +814,7 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 
 See also: hnormalise!()
 """
-
-function hnormalise{T<:Real}(x::Union{Array{T,2},Vector{T}})
+function hnormalise(x::Union{Array{T,2},Vector{T}}) where T <: Real
     hnormalise!(copy(x))
 end
 
@@ -867,11 +837,9 @@ Note that any homogeneous coordinates at infinity (having a scale value of
 See also: hnormalise()
 
 """
-
-# Inplace version
-function hnormalise!{T<:Real}(x::Union{Array{T,2},Vector{T}})
+function hnormalise!(x::Union{Array{T,2},Vector{T}}) where T <: Real
     
-    (rows, npts) = size(x, 1, 2)
+    (rows, npts) = (size(x,1), size(x,2))
 
     for n = 1:npts
         if abs(x[rows, n]) > eps(T)   # point not at infinity
@@ -900,17 +868,13 @@ Returns:
 This code is modelled after the normalised direct linear transformation
 algorithm for the 2D homography given by Hartley and Zisserman p92.
 """
-
-# May 2003
-# February 2016 ported to Julia
-
-function homography1d{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
+function homography1d(x1::Array{T1,2}, x2::Array{T2,2}) where {T1 <: Real, T2 <: Real}
     
     if size(x1) != size(x2)
         error("x1 and x2 must have same dimensions")
     end
     
-    (dim, Npts) = size(x1, 1, 2)
+    (dim, Npts) = size(x1)
 
     # Attempt to normalise each set of points so that the origin 
     # is at centroid and mean distance from origin is 1.
@@ -963,19 +927,18 @@ This code follows the normalised direct linear transformation
 algorithm given by Hartley and Zisserman "Multiple View Geometry in
 Computer Vision" p92.
 """
-#=
-May 2003  - Original version.
-Feb 2004  - Single argument allowed for to enable use with RANSAC.
-June 2015 - Ported to Julia
-=#
-
-function homography2d{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
+function homography2d(x1::Array{T1,2}, x2::Array{T2,2}) where {T1 <: Real, T2 <: Real}
+    #=
+    May 2003  - Original version.
+    Feb 2004  - Single argument allowed for to enable use with RANSAC.
+    June 2015 - Ported to Julia
+    =#
 
     if size(x1) != size(x2)
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, Npts) = size(x1, 1, 2)
+    (dim, Npts) = size(x1)
 
     if dim != 3 
         error("pts must be 3xN")
@@ -1013,9 +976,9 @@ function homography2d{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
 end
 
 # Version with a single argument for use with ransac()
-function homography2d{T<:Real}(x::Array{T,2})
+function homography2d(x::Array{T,2}) where T <: Real
 
-    (dim, npts) = size(x, 1, 2)
+    (dim, npts) = size(x)
 
     if dim != 6 
         error("pts must be a 6xN array")
@@ -1047,9 +1010,7 @@ Returns:
        1 ]        0  0  1 ]     1 ]
 
 ```
-
 """
-
 function solveaffine(xy1, xy2)
 
     if size(xy1) != size(xy2)
@@ -1097,10 +1058,8 @@ returned as newpts and T is the identity matrix.
 
 See also: normalise2dpts()
 """
-
-# ? Can this be unified with normalise2dpts ?
-
-function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
+function normalise1dpts(ptsa::Array{T1,2}) where T1 <: Real
+    # ? Can this be unified with normalise2dpts ?
 
     pts = copy(ptsa) 
 
@@ -1109,7 +1068,7 @@ function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
     end
 
     if any(pts[2,:] .== 0)
-        warning("Attempt to normalise a point at infinity")
+        @warn("Attempt to normalise a point at infinity")
         return pts, eye(2)
     end
     
@@ -1118,7 +1077,7 @@ function normalise1dpts{T1<:Real}(ptsa::Array{T1,2})
     
     # Get centroid and mean distance from centroid
     c = mean(view(pts, 1,:))  
-    meandist = mean(abs.(pts[1,:] - c))
+    meandist = mean(abs.(pts[1,:] .- c))
     scale = 1/meandist
     
     T = [scale    -scale*c
@@ -1155,39 +1114,33 @@ If there are some points at infinity the normalisation transform
 is calculated using just the finite points.  Being a scaling and
 translating transform this will not affect the points at infinity.
 """
-#=
-May 2003      - Original version
-February 2004 - Modified to deal with points at infinity.
-June 2015     - Ported to Julia
-=#
-
-function normalise2dpts{Ty<:Real}(ptsa::Array{Ty,2})
+function normalise2dpts(ptsa::Array{T1,2}) where T1 <: Real
 
     pts = copy(ptsa) # Copy because we alter ptsa (should be able to fix this)
-    newp = zeros(pts)
+    newp = zeros(size(pts))
 
     if size(pts,1) != 3
         error("pts must be 3xN")
     end
     
     # Find the indices of the points that are not at infinity
-    finiteind = find(abs.(pts[3,:]) .> eps())
+    finiteind = findall(abs.(pts[3,:]) .> eps())
     
-    # Should this worning be made?
+    # Should this warning be made?
     if length(finiteind) != size(pts,2)
-        warning("Some points are at infinity")
+        @warn("Some points are at infinity")
     end
     
     # For the finite points ensure homogeneous coords have scale of 1
     pts[1,finiteind] = pts[1,finiteind]./pts[3,finiteind]
     pts[2,finiteind] = pts[2,finiteind]./pts[3,finiteind]
-    pts[3,finiteind] = 1.0
+    pts[3,finiteind] .= 1.0
     
-    c = mean(pts[1:2,finiteind],2)            # Centroid of finite points
-    newp[1,finiteind] = pts[1,finiteind]-c[1] # Shift origin to centroid.
-    newp[2,finiteind] = pts[2,finiteind]-c[2]
+    c = mean(pts[1:2,finiteind],dims=2)          # Centroid of finite points
+    newp[1,finiteind] = pts[1,finiteind] .- c[1] # Shift origin to centroid.
+    newp[2,finiteind] = pts[2,finiteind] .- c[2]
     
-    dist = sqrt.(newp[1,finiteind].^2 + newp[2,finiteind].^2)
+    dist = sqrt.(newp[1,finiteind].^2 .+ newp[2,finiteind].^2)
     meandist = mean(dist) 
     
     scale = sqrt(2.0)/meandist
@@ -1213,7 +1166,7 @@ Returns:   s - 3x3 skew-symmetric matrix
 The cross product between two vectors, a x b can be implemented as a matrix
 product  skew(a)*b
 """
-function skew{T<:Real}(v::Array{T})
+function skew(v::Array{T}) where T <: Real
     
     @assert length(v) == 3  "Input must be a 3x1 array or vector"
     
@@ -1236,7 +1189,7 @@ Arguments:  a, b  - 3-vectors
 Returns:       c  - 3-vector
 ```
 """
-function hcross{T1<:Real, T2<:Real}(a::Array{T1}, b::Array{T2})
+function hcross(a::Array{T1}, b::Array{T2}) where {T1 <: Real, T2 <: Real}
     @assert length(a) == 3 && length(b) == 3  "Input must be a 3-vectors"
     c = cross(a, b)
     c /= c[3]
@@ -1271,21 +1224,13 @@ with ransac()
 
 See also: affinefundmatrix()
 """
-#=
-Feb 2002  - Original version.
-May 2003  - Tidied up and numerically improved.
-Feb 2004  - Single argument allowed to enable use with RANSAC.
-Mar 2005  - Epipole calculation added, 'economy' SVD used.
-Feb 2016  - Ported to Julia
-=#
-
-function  fundmatrix{T1<:Real,T2<:Real}(x1i::Array{T1,2}, x2i::Array{T2,2}; epipoles=false)
+function  fundmatrix(x1i::Array{T1,2}, x2i::Array{T2,2}; epipoles=false) where {T1<:Real,T2<:Real}
 
     if size(x1i) != size(x2i)
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, npts) = size(x1i, 1, 2)
+    (dim, npts) = size(x1i)
 
     if dim != 3 
         error("pts must be a 3xN array of homogeneous coords")
@@ -1302,7 +1247,7 @@ function  fundmatrix{T1<:Real,T2<:Real}(x1i::Array{T1,2}, x2i::Array{T2,2}; epip
     (x2, Tx2) = normalise2dpts(x2i)
     
     # Build the constraint matrix
-    # The following cumbersome construction hopefully works for both v0.4 and v0.5
+    # The following cumbersome construction hopefully works for both v0.4 and v0.5 ** check for 0.7 **
     A = [x2[1:1,:]'.*x1[1:1,:]'   x2[1:1,:]'.*x1[2:2,:]'  x2[1:1,:]'  x2[2:2,:]'.*x1[1:1,:]'   x2[2:2,:]'.*x1[2:2,:]'  x2[2:2,:]'   x1[1:1,:]'   x1[2:2,:]'  ones(npts,1) ]
 
     # Build A transposed so that we can format it in code, and then transpose it
@@ -1319,7 +1264,7 @@ function  fundmatrix{T1<:Real,T2<:Real}(x1i::Array{T1,2}, x2i::Array{T2,2}; epip
 
 println(A)
 =#
-    (U,D,V) = svd(A,thin=false)
+    (U,D,V) = svd(A, full=true)
 
     # Extract fundamental matrix from the column of V corresponding to
     # smallest singular value.
@@ -1328,7 +1273,7 @@ println(A)
     # Enforce constraint that fundamental matrix has rank 2 by performing
     # a svd and then reconstructing with the two largest singular values.
     (U,D,V) = svd(F)
-    F = U*diagm([D[1], D[2], 0])*V'
+    F = U*diagm(0 => [D[1], D[2], 0])*V'
     
     # Denormalise
     F = Tx2'*F*Tx1
@@ -1347,9 +1292,9 @@ end
 
 
 # Version with a single argument for use with ransac()
-function fundmatrix{T<:Real}(x::Array{T,2})
+function fundmatrix(x::Array{T,2}) where T <: Real
 
-    (dim, npts) = size(x, 1, 2)
+    (dim, npts) = size(x)
 
     if dim != 6 
         error("pts must be a 6xN array")
@@ -1391,14 +1336,9 @@ Ed.) is used.
 
 See also: fundmatrix()
 """
-
-# ** Inconsistent in that arguments are inhomogeneous but to use them
-# ** with the fundamental matrix you have to make then homogeneous **
-
-# Feb 2005  Original version
-# Feb 2016  Ported to Julia
-
-function affinefundmatrix{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
+function affinefundmatrix(x1::Array{T1,2}, x2::Array{T2,2}) where {T1<:Real,T2<:Real}
+    # ** Inconsistent in that arguments are inhomogeneous but to use them
+    # ** with the fundamental matrix you have to make then homogeneous **
 
     if size(x1) != size(x2)
         error("x1 and x2 must have same dimensions")
@@ -1419,7 +1359,7 @@ function affinefundmatrix{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
 
     deltaX = zeros(size(X))
     for k = 1:4
-	deltaX[k,:] = X[k,:] - Xmean[k]
+	deltaX[k,:] = X[k,:] .- Xmean[k]
     end
         
     (U,D,V) = svd(deltaX')
@@ -1440,7 +1380,7 @@ function affinefundmatrix{T1<:Real,T2<:Real}(x1::Array{T1,2}, x2::Array{T2,2})
 end
 
 # Version with a single argument for use with ransac()
-function affinefundmatrix{T<:Real}(x::Array{T,2})
+function affinefundmatrix(x::Array{T,2}) where T <: Real
 
     (dim, npts) = size(x)
 
@@ -1469,10 +1409,9 @@ Returns:    F      - Fundamental matrix relating the two camera views.
 ```
 See also: fundmatrix(), affinefundmatrix(), Camera()
 """
-# Reference: Hartley and Zisserman p244
-
-# Version for projection matrices
-function fundfromcameras{T1<:Real, T2<:Real}(P1::Array{T1,2}, P2::Array{T2,2})
+function fundfromcameras(P1::Array{T1,2}, P2::Array{T2,2}) where {T1<:Real, T2<:Real}
+    # Reference: Hartley and Zisserman p244
+    # Version for projection matrices
     
     if (size(P1) != (3,4)) || (size(P2) != (3,4))
         error("Camera matrices must be 3x4")
@@ -1494,7 +1433,6 @@ function fundfromcameras(C1::Camera, C2::Camera)
 end
     
 
-
 #------------------------------------------------------------------------------
 """
 stereorectify - Rectify a stereo pair of images.
@@ -1506,7 +1444,7 @@ Usage: (P1r, img1r, H1, P2r, img2r, H2, dmin, dmax, dmed) = ...
 
 Arguments:
           P1, P2 - Projection matrices of the images to be rectified.
-      img1, img2 - The two images (assumed same size).
+      img1, img2 - The two images, may be multi-channel (assumed same size). 
          xy1,xy2 - Optional: Two sets of corresponding homogeneous image
                    coordinates in the images [3 x N] in size.  If supplied
                    these are used to construct a rectification that seeks
@@ -1542,18 +1480,9 @@ truncation applied to the ends of the histograms to exclude outliers.
 
 See also: stereorectifytransforms()
 """
-#=
-Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
-
-Peter Kovesi
-peterkovesi.com
-
-May 2016
-July 2016 Ported to Julia
-=#
-
 function stereorectify(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0); 
                        scale::Real=1.0, disparitytruncation::Real=0.0, diagnostics::Bool=false)
+    # Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
     
     # Get the transformations required to perform stereorectification
     (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1, P2, img2, 
@@ -1623,7 +1552,7 @@ Usage:  (P1r, H1, P2r, H2, dmin, dmax, dmed) = stereorectifytransforms(P1, img1,
 
 Arguments:
           P1, P2 - Projection matrices of the images to be rectified.
-      img1, img2 - The two images (assumed same size).
+      img1, img2 - The two images, may be multi-channel (assumed same size).
          xy1,xy2 - Optional: Two sets of corresponding homogeneous image
                    coordinates in the images [3 x N] in size.  If supplied
                    these are used to construct a rectification that seeks
@@ -1656,15 +1585,13 @@ truncation applied to the ends of the histograms to exclude outliers.
 
 See also: stereorectify()
 """
-
-# Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
-
 function stereorectifytransforms(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0); 
                                  scale::Real=1.0, disparitytruncation::Real=0.0)
+    # Reference:  Hartley and Zisserman 2nd Ed. Section 11.12, p302
     
     AFFINECORRECT = !isempty(xy1) && !isempty(xy2)
     
-    (rows1, cols1, chan) = size(img1, 1, 2, 3)
+    (rows1, cols1, chan) = (size(img1, 1), size(img1,2), size(img1,3))
     
     # Get Fundamental matrix and epipoles
     # F *e1 = 0
@@ -1808,7 +1735,6 @@ function stereorectifytransforms(P1, img1, P2, img2, xy1=zeros(0), xy2=zeros(0);
 end
 
 
-
 #---------------------------------------------------------------------
 """
 transformedimagebounds
@@ -1821,7 +1747,7 @@ Usage:  (minx, maxx, miny, maxy) = transformedimagebounds(img::Array, H::Array)
         (minx, maxx, miny, maxy) = transformedimagebounds(sze::Tuple, H::Array)
 
 Arguments:   img - An array storing the image or
-             sze - A tuple as returned by size() giving the size of the image.
+             sze - A tuple giving the size of the image.
                H - The transforming homography, a 3x3 matrix.
 
 Returns: 
@@ -1829,9 +1755,7 @@ Returns:
       miny, maxy   the transformed image.
 
 ```
-
 """
-
 function  transformedimagebounds(img, H)    
     transformedimagebounds(size(img), H)
 end
@@ -1875,12 +1799,7 @@ Returns:
 
 See also Camera(), cameraproject()
 """
-
-# August   2015 Adapted from imagept2plane
-# February 2016 Refined inversion of distortion process slightly
-#               Ported to Julia
-
-function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
+function idealimagepts(C::Camera, xy::Union{Array{T,2}, Vector{T}}) where T <: Real
     
     if size(xy, 1) != 2
         error("Image xy data must be a 2 x N array")
@@ -1891,8 +1810,8 @@ function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
     # Subtract principal point and divide by focal length to get normalised,
     # distorted image coordinates.  Note skew represents the 2D shearing
     # coefficient times fx
-    y_d = (xy[2,:] - C.ppy)/C.fy
-    x_d = (xy[1,:] - C.ppx - y_d*C.skew)/C.fx
+    y_d = (xy[2,:] .- C.ppy)/C.fy
+    x_d = (xy[1,:] .- C.ppx - y_d*C.skew)/C.fx
     
     # Compute the inverse of the lens distortion effect by computing the
     # 'forward' direction lens distortion at this point and then subtracting
@@ -1901,23 +1820,23 @@ function idealimagepts{T<:Real}(C::Camera, xy::Union{Array{T,2}, Vector{T}})
     # Radial distortion factor. Here the squared radius is computed from the
     # already distorted coordinates.  The approximation we are making here is to
     # assume that the distortion is locally constant.
-    rsqrd = x_d.^2 + y_d.^2
-    r_d = 1 + C.k1*rsqrd + C.k2*rsqrd.^2 + C.k3*rsqrd.^3
+    rsqrd = x_d.^2 .+ y_d.^2
+    r_d = 1 .+ C.k1*rsqrd .+ C.k2*rsqrd.^2 .+ C.k3*rsqrd.^3
     
     # Tangential distortion component, again computed from the already distorted
     # coords.
-    dtx = 2*C.p1*x_d.*y_d         + C.p2*(rsqrd + 2*x_d.^2)
-    dty = C.p1*(rsqrd + 2*y_d.^2) + 2*C.p2*x_d.*y_d
+    dtx = 2*C.p1*x_d.*y_d          .+ C.p2*(rsqrd .+ 2*x_d.^2)
+    dty = C.p1*(rsqrd .+ 2*y_d.^2) .+ 2*C.p2*x_d.*y_d
 
     # Subtract the tangential distortion components and divide by the radial
     # distortion factor to get an approximation of the undistorted normalised
     # image coordinates (with no skew)
-    x_n = (x_d - dtx)./r_d
-    y_n = (y_d - dty)./r_d
+    x_n = (x_d .- dtx)./r_d
+    y_n = (y_d .- dty)./r_d
     
     # Finally project back to pixel coordinates.
-    x_p = C.ppx + x_n*C.fx + y_n*C.skew
-    y_p = C.ppy + y_n*C.fy
+    x_p = C.ppx .+ x_n*C.fx + y_n*C.skew
+    y_p = C.ppy .+ y_n*C.fy
     
     return xyideal = [x_p
                       y_p]
@@ -1950,10 +1869,9 @@ Returns:      pt - 3D location in space returned in normalised
 
 See also: idealimagepts(), camstruct2projmatrix(), Camera()
 """
+function solvestereopt(xy::Array{T1,2}, P::Array{Array{T2,2}}; reprojecterror=false) where {T1<:Real,T2<:Real}
 
-function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}}; reprojecterror=false)
-
-    (dim,N) = size(xy, 1, 2)
+    (dim,N) = size(xy)
     @assert N == length(P) "Number of points and cameras must match"
     @assert dim == 2  "Image coordinates must be a 2xN array of inhomogeneous coords"
     @assert N >= 2  "Must have at least 2 camera views"
@@ -1961,8 +1879,8 @@ function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}}
     # Build eqn of the form A*pt = 0
     A = zeros(2*N, 4)
     for n = 1:N
-	A[2*n-1,:] = xy[1,n]*P[n][3,:] - P[n][1,:]
-	A[2*n  ,:] = xy[2,n]*P[n][3,:] - P[n][2,:]
+	A[2*n-1,:] = xy[1,n]*P[n][3,:] .- P[n][1,:]
+	A[2*n  ,:] = xy[2,n]*P[n][3,:] .- P[n][2,:]
     end
 	
     (~,~,v) = svd(A)
@@ -1984,9 +1902,9 @@ function solvestereopt{T1<:Real,T2<:Real}(xy::Array{T1,2}, P::Array{Array{T2,2}}
 end
 
 # Version where the camera data is an array of Camera structures
-function solvestereopt{T<:Real}(xy::Array{T,2}, C::Array{Camera}; reprojecterror=false)
+function solvestereopt(xy::Array{T,2}, C::Array{Camera}; reprojecterror=false) where T<:Real
 
-    (dim,N) = size(xy, 1, 2)
+    (dim,N) = size(xy)
     @assert N == length(C) "Number of points and cameras must match"
     @assert dim == 2  "Image coordinates must be a 2xN array of inhomogeneous coords"
     @assert N >= 2  "Must have at least 2 camera views"
@@ -2002,8 +1920,6 @@ function solvestereopt{T<:Real}(xy::Array{T,2}, C::Array{Camera}; reprojecterror
 
     return solvestereopt(xyideal, P, reprojecterror=reprojecterror)
 end
-
-
 
 #---------------------------------------------------------------------
 """
@@ -2036,13 +1952,13 @@ to an image plane 1 unit from the projection centre.  This is why the
 focal length is required.
 
 """
-
-# ** Allow for separate valuees of fx and fy ??
-
-# Version for image represented by 2D array 
-function undistortimage{T<:Real}(img::Array{T,2}, f::Real,
+function undistortimage(img::Array{T,2}, f::Real,
                        ppx::Real, ppy::Real, k1::Real, k2::Real, k3::Real, 
-                       p1::Real, p2::Real)
+                       p1::Real, p2::Real) where T<:Real
+
+    # ** Allow for separate valuees of fx and fy ??
+    #
+    # Version for image represented by 2D array 
     
     # Strategy: Generate a grid of coordinate values corresponding to
     # an ideal undistorted image.  We then apply the imaging process
@@ -2074,9 +1990,9 @@ function undistortimage(img, cam::Camera)
 end
 
 # Version for image represented by 3D array 
-function undistortimage{T<:Real}(img::Array{T,3}, f::Real,
+function undistortimage(img::Array{T,3}, f::Real,
                        ppx::Real, ppy::Real, k1::Real, k2::Real, k3::Real, 
-                       p1::Real, p2::Real)
+                       p1::Real, p2::Real) where T<:Real
     
     (rows, cols, channels) = size(img)
     nimg = zeros(size(img))
@@ -2153,12 +2069,9 @@ limits.  This will require you to set the desired limits with a call
 to PyPlot.axis() prior to calling this function.
 
 """
-
-# Using PyPlot
-
-# Case when 2 homogeneous points are supplied
 function hline(p1i::Vector, p2i::Vector, linestyle::String="b-")
-
+    # Case when 2 homogeneous points are supplied
+    
     p1 = p1i./p1i[3]    # make sure homogeneous points lie in z=1 plane
     p2 = p2i./p2i[3]
 
@@ -2211,7 +2124,6 @@ The camera's coordinate X and Y axes are also plotted at the camera centre.
 
 See also: Camera
 """
-
 function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     
     if isa(Ci, Array)
@@ -2226,7 +2138,7 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     for i = 1:length(C)
         
         if C[i].rows == 0 || C[i].cols == 0
-            warning("Camera rows and cols not specified")
+            @warn("Camera rows and cols not specified")
             continue
         end
         
@@ -2268,9 +2180,9 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
                color=col)
         
         # Draw and label axes
-        X = Tw_c[1:3,1]*l + C[i].P
-        Y = Tw_c[1:3,2]*l + C[i].P    
-        Z = Tw_c[1:3,3]*l + C[i].P            
+        X = Tw_c[1:3,1]*l .+ C[i].P
+        Y = Tw_c[1:3,2]*l .+ C[i].P    
+        Z = Tw_c[1:3,3]*l .+ C[i].P            
         
         plot3D([C[i].P[1], X[1,1]], [C[i].P[2], X[2,1]], [C[i].P[3], X[3,1]],
                color=col)
@@ -2284,8 +2196,6 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     end
 
 end
-
-
 
 #---------------------------------------------------------------------
 """
@@ -2306,22 +2216,11 @@ Returns:
 
 See also: imgtrans!()
 """
-
-#=
-Peter Kovesi
-peterkovesi.com
-
-April 2000 - original version.
-July  2001 - transformation of region boundaries corrected.
-May   2016 - Minor tidying, no image scaling
-July 2016  - Ported to Julia
-=#
-
-# ** To do: Add options to allow/disallow rescaling translating etc
-# If rescaling and translating occur then the new homography should be returned.
-
-# Version for image represented by 3D array 
-function imgtrans{T}(img::Array{T,3}, H::Array{Float64,2})
+function imgtrans(img::Array{T,3}, H::Array{Float64,2}) where T <: Real
+    # Version for image represented by 3D array
+    
+    # ** To do: Add options to allow/disallow rescaling translating etc
+    # If rescaling and translating occur then the new homography should be returned.
     
     (rows, cols, channels) = size(img)
     invH = inv(H)
@@ -2364,7 +2263,7 @@ function imgtrans{T}(img::Array{T,3}, H::Array{Float64,2})
 end
 
 # Version for image represented by 2D array 
-function imgtrans{T}(img::Array{T,2}, H::Array{Float64,2})
+function imgtrans(img::Array{T,2}, H::Array{Float64,2}) where T <: Real
     
     (rows,cols) = size(img)
     invH = inv(H)
@@ -2420,13 +2319,10 @@ Arguments:
 Returns: nothing
 
 ```
-
 See also: imgtrans()
 """
-
-
-# Version for image represented by 2D array inplace
-function imgtrans!{T}(newimg::Array{T,2}, img::Array{T,2}, H::Array{Float64,2})
+function imgtrans!(newimg::Array{T,2}, img::Array{T,2}, H::Array{Float64,2}) where T <: Real
+    # Version for image represented by 2D array inplace
     
     (rows,cols) = size(img)
     invH = inv(H)
@@ -2455,9 +2351,6 @@ function imgtrans!{T}(newimg::Array{T,2}, img::Array{T,2}, H::Array{Float64,2})
     
     return nothing
 end
-
-
-
 
 #=
 # Images.Image version  *** Have to sort out rows cols order !!! ***

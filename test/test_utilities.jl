@@ -1,5 +1,7 @@
 # Test utililties.jl
 
+using Test, Statistics
+
 println("testing utilites")
 
 tol = 1e-2   # Fairly sloppy, needed for the derivative tests
@@ -12,12 +14,12 @@ img = [c for r=1:50, c=1:50]
 (gx,gy) = derivative3(img, ("x", "y"))
 
 # Test interior of derivatives matrix matches expected values
-@test all(abs.(gx[5:end-5,5:end-5] - 1) .< tol)
+@test all(abs.(gx[5:end-5,5:end-5] .- 1) .< tol)
 @test all(abs.(gy[5:end-5,5:end-5]) .< tol)
 
 (gx,gy, gxx, gyy, gxy) = derivative5(img, ("x", "y", "xx", "yy", "xy"))
 # Test interior of derivatives matrix matches expected values
-@test all(abs.(gx[5:end-5,5:end-5] - 1) .< tol)
+@test all(abs.(gx[5:end-5,5:end-5] .- 1) .< tol)
 @test all(abs.(gy[5:end-5,5:end-5]) .< tol)
 @test all(abs.(gxx[5:end-5,5:end-5]) .< tol)
 @test all(abs.(gyy[5:end-5,5:end-5]) .< tol)
@@ -25,7 +27,7 @@ img = [c for r=1:50, c=1:50]
 
 (gx,gy, gxx, gyy, gxy) = derivative7(img, ("x", "y", "xx", "yy", "xy"))
 # Test interior of derivatives matrix matches expected values
-@test all(abs.(gx[5:end-5,5:end-5] - 1) .< tol)
+@test all(abs.(gx[5:end-5,5:end-5] .- 1) .< tol)
 @test all(abs.(gy[5:end-5,5:end-5]) .< tol)
 @test all(abs.(gxx[5:end-5,5:end-5]) .< tol)
 @test all(abs.(gyy[5:end-5,5:end-5]) .< tol)
@@ -93,9 +95,9 @@ maxval = maximum(htimg)
 # Check that the number of saturated pixels at each extreme is
 # approximately lHistCut and uHistCut. Note some integer rounding has
 # to occur.
-v = find(abs.(htimg-minval).<eps())
+v = findall(abs.(htimg .- minval).<eps())
 @test abs(length(v)/(rows*cols) * 100 - lHistCut) < 1
 
-v = find(abs.(htimg-maxval).<eps())
+v = findall(abs.(htimg .- maxval).<eps())
 @test abs(length(v)/(rows*cols) * 100 - uHistCut) < 1
 
