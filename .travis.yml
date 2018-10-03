@@ -4,12 +4,16 @@ os:
   - linux
   - osx
 julia:
-  - 0.5
-  - 0.6
-#  - nightly
+  - 0.7
+  - 1.0
+  - nightly
 notifications:
   email: false
-# uncomment the following lines to override the default test script
+git:
+  depth: 99999999
+matrix:
+  allow_failures:
+  - julia: nightly
 script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'ENV["PYTHON"]=""; Pkg.clone(pwd()); Pkg.build("ImageProjectiveGeometry"); Pkg.test("ImageProjectiveGeometry"; coverage=true)'
+  - julia -e 'using Pkg; Pkg.clone(pwd()); ENV["PYTHON"]=""; Pkg.build("PyCall"); Pkg.build("ImageProjectiveGeometry"); Pkg.test("ImageProjectiveGeometry"; coverage=true)'
+  
