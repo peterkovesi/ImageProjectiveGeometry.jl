@@ -38,7 +38,7 @@ external dependencies and make it as self contained as possible.
 implements image projection functions, functions for computing
 homographies and fundamental matrices, stereo solution, etc.
 * [**cornerfeatures**](doc/cornerfeatures.md) Implementations of a number of corner detectors.  Note some of these duplicate what is available in the Images package.
-* [**ransac**](doc/ransac.md) A generic implementation of RANSAC along with a collection of specific functions that use RANAC for robust estimation of homographies and fundamental matrices, and for fitting lines and planes etc.
+* [**ransac**](doc/ransac.md) A generic implementation of RANSAC along with a collection of specific functions that use RANSAC for robust estimation of homographies and fundamental matrices, and for fitting lines and planes etc.
 * [**transforms**](doc/transforms.md) Functions for constructing,
 applying, and decomposing homogeneous transforms, angle-axis
 descriptors, and quaternions.
