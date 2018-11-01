@@ -15,5 +15,5 @@ matrix:
   allow_failures:
   - julia: nightly
 script:
-  - julia -e 'using Pkg; Pkg.add(pwd()); ENV["PYTHON"]=""; Pkg.build("PyCall"); Pkg.build("ImageProjectiveGeometry"); Pkg.test("ImageProjectiveGeometry"; coverage=true)'
+  - julia -e 'using Pkg; ENV["PYTHON"]=""; Pkg.build("PyCall"); Pkg.build("ImageProjectiveGeometry"); Pkg.test("ImageProjectiveGeometry"; coverage=true)'
   
