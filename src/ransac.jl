@@ -123,12 +123,12 @@ function ransac(x, fittingfn, distfn, degenfn, s, t, feedback = false,
         error("Not enough data points to form a model")
     end
     
-    bestM = NaN      # Sentinel value allowing detection of solution failure.
+    bestM = NaN       # Sentinel value allowing detection of solution failure.
     trialcount = 0
     bestscore =  0
     bestinliers = []  # Ensure global to function
     bestM = []
-    N = 1            # Dummy initialisation for number of trials.
+    N = maxTrials     # Dummy initialisation for number of trials.
     
     while N > trialcount
         

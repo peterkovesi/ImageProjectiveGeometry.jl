@@ -9,10 +9,11 @@ ImageProjectiveGeometry
 
 ## Installation
 
-Install via the package manager.  
+At the moment for Julia 0.7/1.0 you should install the master via the package manager.  
 
 ```
-julia> Pkg.add("ImageProjectiveGeometry")
+pkg> add ImageProjectiveGeometry#master
+
 ```
 
 ```
