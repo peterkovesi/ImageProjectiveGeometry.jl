@@ -715,17 +715,16 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         else
             k = round.([Int], seSize)
         end
-        
+
         dimg = copy(img)
         
         for c = 1:cols
-            dimg[:,c] = erode_dilate1d(img[:,c], k[1], erode_dilate)
+            dimg[:,c] = erode_dilate1d(img[:,c], k[1], erode_dilate)            
         end
         
         for r = 1:rows
-            dimg[r,:] = erode_dilate1d(vec(dimg[r,:]), k[2], erode_dilate)
-            # vec() needed for 0.4 in line above
-        end    
+            dimg[r,:] = erode_dilate1d(dimg[r,:], k[2], erode_dilate)            
+        end
         
     # Octagonal structuring element        
     elseif uppercase(seType[1:3]) == "OCT"
@@ -736,10 +735,10 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         # The size of the linear structuring element for the dilations in the
         # diagonal direction is 1/sqrt(2) of k
         dk = round(Int, k/sqrt(2))
-        # Make both structuring element sizes odd so that there is a centre
-        # pixel and the resulting octagon is symmetric (not needed)
-#        if iseven(dk), dk = dk+1; end
-#        if iseven(round(k)), k = round(k)+1; end
+        # Ensure the diagonal structuring element size is odd so that there is a centre
+        # pixel and the resulting octagon is symmetric 
+        if iseven(dk); dk = dk+1; end
+#        if iseven(round(k)); k = round(k)+1; end
         
         # First do 2D square dilation
         dimg = imerode_dilate(img, "rect", k, erode_dilate)
