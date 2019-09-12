@@ -13,8 +13,5 @@ git:
 matrix:
   allow_failures:
   - julia: nightly
-script:
-using Pkg
-Pkg.build(verbose = true) 
-Pkg.test(coverage=true)
+
 
