@@ -13,5 +13,9 @@ git:
 matrix:
   allow_failures:
   - julia: nightly
+env:
+ - PYTHON=""
+#script:
+
 
 
