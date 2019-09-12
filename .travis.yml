@@ -4,8 +4,7 @@ os:
   - linux
   - osx
 julia:
-  - 0.7
-  - 1.0
+  - 1.1
   - nightly
 notifications:
   email: false
@@ -15,5 +14,7 @@ matrix:
   allow_failures:
   - julia: nightly
 script:
-  - julia -e 'using Pkg; Pkg.clone(pwd()); ENV["PYTHON"]=""; Pkg.build("PyCall"); Pkg.build("ImageProjectiveGeometry"); Pkg.test("ImageProjectiveGeometry"; coverage=true)'
-  
+using Pkg
+Pkg.build(verbose = true) 
+Pkg.test(coverage=true)
+
