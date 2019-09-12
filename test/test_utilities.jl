@@ -52,8 +52,8 @@ ve = erode1d(vd,k)   # Erode back and check we reconstruct v
 @test all(ve .== v)
 
 # imdilate imerode
-img = zeros(100,100)
-img[50,50] = 1
+img = falses(100,100)
+img[50,50] = true
 dimg = imdilate(img, "rect", [5, 3])
 @test all(dimg[47:47,48:52] .== [0 0 0 0 0])
 @test all(dimg[50:50,48:52] .== [0 1 1 1 0])

@@ -13,12 +13,12 @@ tol = 1;
 # nonmaxsuppts
 
 # Create an image with an isolated point
-img = zeros(100,100)
+img = zeros(100,100);
 r0 = 20;
 c0 = 40;
-img[r0,c0] = 10
+img[r0,c0] = 10;
 
-(cimg, r, c) = harris(img, N=1,radius=5,subpixel=false)
+(cimg, r, c) = harris(img, N=1,radius=5,subpixel=false);
 @test abs(r[1]-r0) < tol && abs(c[1]-c0) < tol
 
 (cimg, r, c) = noble(img, N=1,radius=5,subpixel=false)

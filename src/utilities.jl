@@ -81,16 +81,16 @@ function derivative3(img::Array{T,2}, spec) where T <: Real
     # ?? Coefficients seem too small added the division...??
     d1 =[0.425287,  0.000000, -0.425287]/0.8506
     
-    # Compute derivatives.  Note that in the 1st call below conv2
+    # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
     G = Array{Array}(undef, length(spec))
     
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = DSP.conv2(p, d1, fimg)[2:end-1, 2:end-1]
+          G[n] = DSP.conv(p, d1, fimg)[2:end-1, 2:end-1]
       elseif spec[n] == "y"
-          G[n] = DSP.conv2(d1, p, fimg)[2:end-1, 2:end-1]
+          G[n] = DSP.conv(d1, p, fimg)[2:end-1, 2:end-1]
       else
           badspec = spec[n]
           error(" $badspec is an unrecognized derivative option")
@@ -173,33 +173,24 @@ function derivative5(img::Array{T,2}, spec) where T <: Real
         d2 = [0.232905,  0.002668, -0.471147,  0.002668,  0.232905]
     end
 
-    # Compute derivatives.  Note that in the 1st call below conv2
+    # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then
     # a 1D convolution along the rows using d1. etc etc.
-    # Note that the result has to be trimmed becasue conv2 expands the 
+    # Note that the result has to be trimmed becasue conv expands the 
     # result due to size of the filter
-    gx = false
-    gxn = 0
     G = Array{Array}(undef,length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = DSP.conv2(p, d1, fimg)[3:end-2, 3:end-2]
-          gx = true   # Record that gx is available for gxy if needed
-          gxn = n
+          G[n] = DSP.conv(p, d1, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "y"
-          G[n] = DSP.conv2(d1, p, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv(d1, p, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "xx"
-          G[n] = DSP.conv2(p, d2, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv(p, d2, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "yy"
-          G[n] = DSP.conv2(d2, p, fimg)[3:end-2, 3:end-2]
+          G[n] = DSP.conv(d2, p, fimg)[3:end-2, 3:end-2]
       elseif spec[n] == "xy" || spec[n] == "yx"
-          if gx
-              G[n] = DSP.conv2(d1, p, G[gxn])[3:end-2, 3:end-2]
-          else
-              gx = DSP.conv2(p, d1, fimg)[3:end-2, 3:end-2]
-              G[n] = DSP.conv2(d1, p, gx)[3:end-2, 3:end-2]
-          end
+          G[n] = DSP.conv(d1, d1, fimg)[3:end-2, 3:end-2]
       else
           badspec = spec[n]
           error(" $badspec is an unrecognized derivative option")
@@ -259,33 +250,24 @@ function derivative7(img::Array{T,2}, spec) where T <: Real
     d1 = [ 0.018708,  0.125376,  0.193091,  0.000000, -0.193091, -0.125376, -0.018708]
     d2 = [ 0.055336,  0.137778, -0.056554, -0.273118, -0.056554,  0.137778,  0.055336]
     
-    # Compute derivatives.  Note that in the 1st call below conv2
+    # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
-    # Note that the result has to be trimmed becasue conv2 expands the 
+    # Note that the result has to be trimmed becasue conv expands the 
     # result due to size of the filter
-    gx = false
-    gxn = 0
     G = Array{Array}(undef, length(spec))
 
     for n = 1:length(spec)
       if spec[n] == "x"
-          G[n] = DSP.conv2(p, d1, fimg)[4:end-3, 4:end-3]
-          gx = true    # Record that gx is available for gxy if needed
-          gxn = n
+          G[n] = DSP.conv(p, d1, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "y"
-          G[n] = DSP.conv2(d1, p, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv(d1, p, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "xx"
-          G[n] = DSP.conv2(p, d2, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv(p, d2, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "yy"
-          G[n] = DSP.conv2(d2, p, fimg)[4:end-3, 4:end-3]
+          G[n] = DSP.conv(d2, p, fimg)[4:end-3, 4:end-3]
       elseif spec[n] == "xy" || spec[n] == "yx"
-          if gx
-              G[n] = DSP.conv2(d1, p, G[gxn])[4:end-3, 4:end-3]
-          else
-              gx = DSP.conv2(p, d1, fimg)[4:end-3, 4:end-3]
-              G[n] = DSP.conv2(d1, p, gx)[4:end-3, 4:end-3]
-          end
+          G[n] = DSP.conv(d1, d1, fimg)[4:end-3, 4:end-3]
       else
           badspec = spec[n]
           error(" $badspec is an unrecognized derivative option")
@@ -446,7 +428,6 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
         PyPlot.clf()
         PyPlot.imshow(img)
         PyPlot.set_cmap(PyPlot.ColorMap("gray"))
-#        PyPlot.hold(true)  # No longer needed
         if subpixel
             PyPlot.plot(csubpix,rsubpix,"r+")
         else
@@ -454,7 +435,6 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
         end
         PyPlot.axis([1,cols,rows,1])
         PyPlot.title("Corners detected")
-#        PyPlot.hold(false)  # No longer needed
     end
     
     if subpixel
@@ -485,7 +465,7 @@ size.
 
 See also: dilate1d(), imerode(), imdilate()
 """
-function erode1d(f::Array{T,1}, ki::Real) where T <: Real
+function erode1d(f::Array{T,1}, ki::Integer) where T <: Real
     #=
     Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
     filters on rectangular and octagonal kernels".  Pattern Recognition Letters 13
@@ -498,7 +478,7 @@ function erode1d(f::Array{T,1}, ki::Real) where T <: Real
     return erode_dilate1d(f, ki, "ERODE")
 end
 
-function erode1d(f::BitArray{1}, ki::Real)
+function erode1d(f::BitArray{1}, ki::Integer)
     return erode_dilate1d(f, ki, "ERODE")
 end
 
@@ -522,39 +502,51 @@ size.
 
 See also: erode1d(), imdilate(), imerode()
 """
-function dilate1d(f::Array{T,1}, ki::Real) where T <: Real
+function dilate1d(f::Array{T,1}, ki::Integer) where T <: Real
     return erode_dilate1d(f, ki, "DILATE")
 end
 
-function dilate1d(f::BitArray{1}, ki::Real)
+function dilate1d(f::BitArray{1}, ki::Integer)
     return erode_dilate1d(f, ki, "DILATE")
 end
 
 #---------------------------------------------------------------------
+"""
+Unexported function that performs 1D erosion or dilation 
 
-# Unexported function that performs 1D erosion or dilation 
+```
+Usage: df = erode_dilate1d(f, k::Integer, erode_dilate::String)
 
-# ** This function is slow because it repeatedly allocates and frees
-# ** space.  Need to develop a version erode_dilate1d!()
+Arguments:  
+            f - Array of values to be eroded or dilated
+            k - Size/length of 1D structuring element
+ erode_dilate - "erode" or "dilate"
 
+Returns:  
+          fd - The eroded/dilated array.
+```
+
+See also: erode_dilate1d!()
+
+"""
+function erode_dilate1d(f, k::Integer, erode_dilate::String)
 #function erode_dilate1d{T<:Real}(f::Array{T,1}, ki::Real, 
 #                           erode_dilate::String)
-function erode_dilate1d(f, ki::Real, erode_dilate::String)
-
- 
+    
     if uppercase(erode_dilate) == "ERODE"
         min_max = min
+        gt_lt = >
         typemin_max = typemax
     elseif  uppercase(erode_dilate) == "DILATE"
         min_max = max
+        gt_lt = <
         typemin_max = typemin
     else
         error("Option must be 'erode' or 'dilate' ")
     end
    
-    df = zeros(size(f))
+    df = zeros(eltype(f), size(f))
     Nf = length(f)
-    k = round(Int, ki)
     
     # Determine the 'radius' of structuring element.  If the size is odd then
     # there is a centre pixel and the 'radius' is symmetric.  If the size is
@@ -569,24 +561,31 @@ function erode_dilate1d(f, ki::Real, erode_dilate::String)
         rad2 = rad1-1
     end
     
-    # Pad ends of f with rad values of -Inf and ensure overall length of padded
+    # Pad ends of f with rad values of +-typemin/max and ensure overall length of padded
     # array is a multiple of k
     extrapad = round(Int, mod(Nf + rad1+rad2, k))
     padval = typemin_max(typeof(f[1]));
-    fpad = [repeat([padval], rad1); f[:]; repeat([padval], rad2+extrapad)]
-
-    N = length(fpad)
-    g=copy(fpad)
-    h=copy(fpad)
+    g = [repeat([padval], rad1); f[:]; repeat([padval], rad2+extrapad)]
+    h = copy(g)
+    Npad = length(g)
     
     # Generate the intermediate arrays
-    for o = 0:k:(N-k)
-        for n = 2:k
-            g[o+n] = min_max(g[o+n], g[o+n-1])
+    rng2tok = 2:k           # Precompute ranges for a small gain in speed
+    rngkm1to1 = (k-1):-1:1
+
+    for o in 0:k:(Npad-k)
+        op1 = o+1
+        om1 = o-1
+        for n in rng2tok
+            if gt_lt(g[o+n], g[om1+n])
+                g[o+n] = g[om1+n]
+            end
         end
         
-        for n = (k-1):-1:1
-            h[o+n] = min_max(h[o+n], h[o+n+1])
+        for n in rngkm1to1
+            if gt_lt(h[o+n], h[op1+n])
+                h[o+n] = h[op1+n]
+            end            
         end            
     end
     
@@ -594,13 +593,168 @@ function erode_dilate1d(f, ki::Real, erode_dilate::String)
     # that for even sized structuring elements there is a wasted min() or max()
     # operation every k steps.  However in the interests of keeping the code
     # clean and simple this is accepted.
-    for n = rad1+1:rad1+Nf
-        df[n-rad1] = min_max(g[n+rad2], h[n-rad1])
+    for n in rad1+1:rad1+Nf
+        # If eroding we want the minimum of g[n+rad2] and h[n-rad1]
+        # also note that if eroding gt_lt is >().  Vice-versa for dilation
+
+        if gt_lt(g[n + rad2], h[n - rad1])
+            df[n - rad1] = h[n - rad1]
+        else
+            df[n - rad1] = g[n + rad2]
+        end
+
     end
 
     return df
 end
 
+#---------------------------------------------------------------------
+"""
+
+Parameterised struct for storing erosion/dilation parameters and data buffers
+for the implementation of Marcel van Herk's morphological algorithm.
+The parameterisation is awkward due to the need to accommodate BitArrays
+
+If you are processing a BitArray T1 should be Bool and T2 is BitArray{1}
+If you are processing an Array T1 should be set to the element type and T2 set to Array{eltype, 1}
+
+"""
+struct erode_dilate_data{T1,T2}
+    min_max  # min() or max()
+    gt_lt
+    k::Int64     # length of 1D structuring element
+    rad1::Int64  # radius 1 of structuring element
+    rad2::Int64  # radius 2 of structuring element
+    N::Int64     # Length of input array
+    Npad::Int64  # Length of padded buffer arrays
+    padval::T1
+    g::T2        # buffer
+    h::T2        # buffer
+end
+
+"""
+Set up buffers etc for erode_dilate!()
+
+See `erode_dilate_data`
+"""
+function erode_dilate1d!_setup(f::Union{BitArray{1}, Array{T,1}}, k::Integer, erode_dilate::String) where T<:Real
+
+    if uppercase(erode_dilate) == "ERODE"
+        min_max = min
+        gt_lt = >        
+        typemin_max = typemax
+    elseif  uppercase(erode_dilate) == "DILATE"
+        min_max = max
+        gt_lt = <        
+        typemin_max = typemin
+    else
+        error("Option must be 'erode' or 'dilate' ")
+    end
+
+    # Determine the 'radius' of structuring element.  If the size is odd then
+    # there is a centre pixel and the 'radius' is symmetric.  If the size is
+    # even then the centre pixel is taken to be the integer pixel location to
+    # the right of the ideal. In this case we have a 'left radius', rad1 and
+    # a 'right radius' rad2.
+    if isodd(k)
+        rad1 = rad2 = (k-1)÷2
+    else
+        rad1 = k÷2
+        rad2 = rad1-1
+    end
+
+    # The buffers need to accommodate f + padding of rad1 + rad2 plus extra to
+    # ensure overall length of padded array is a multiple of k
+    Nf = length(f)
+    extrapad = round(Int64, mod(Nf + rad1+rad2, k))
+    padval = typemin_max(eltype(f))
+
+    Npad = rad1 + Nf + rad2 + extrapad
+
+    if eltype(f) == Bool   # Use BitArrays, faster and less memory
+        g = BitArray(undef, Npad)
+        h = BitArray(undef, Npad)
+        return erode_dilate_data{Bool, BitArray{1}}(min_max, gt_lt,  k, rad1, rad2, Nf, Npad, padval, g, h)
+    else
+        g = zeros(eltype(f), Npad)
+        h = zeros(eltype(f), Npad)
+        return erode_dilate_data{eltype(f), Array{eltype(f),1}}(min_max, gt_lt,  k, rad1, rad2, Nf, Npad, padval, g, h)
+    end
+
+end
+
+#---------------------------------------------------------------------
+"""
+
+Inplace version of erode_dilate1d()
+
+
+Usage: erode_dilate1d!(df, f, D::erode_dilate_data, N = D.N)
+
+Arguments:
+
+    N - Optional argument indicating length of valid elements in f to use
+
+"""
+function erode_dilate1d!(df, f, D::erode_dilate_data, N = D.N)
+
+    # Fill buffers D.g and D.h with padding and the input array f
+    for n in 1:D.rad1
+        D.g[n] = D.padval
+    end
+
+    ind = 1
+    for n in (D.rad1+1):(D.rad1 + N)
+        D.g[n] = f[ind]
+        ind += 1
+    end
+
+    for n in (D.rad1 + N + 1):D.Npad
+        D.g[n] = D.padval
+    end
+
+    for n in 1:D.Npad
+        D.h[n] = D.g[n]
+    end
+    
+    # Generate the intermediate arrays
+    rng2tok = 2:D.k           # Precompute ranges for a small gain in speed
+    rngkm1to1 = (D.k-1):-1:1
+    
+    for o in 0:D.k:(D.Npad-D.k)
+        om1 = o - 1
+        op1 = o + 1
+        for n in rng2tok
+            if D.gt_lt(D.g[o+n], D.g[om1+n])
+                D.g[o+n] = D.g[om1+n]
+            end            
+        end
+        
+        for n in rngkm1to1
+            if D.gt_lt(D.h[o+n], D.h[op1+n])
+                D.h[o+n] = D.h[op1+n]
+            end                        
+        end            
+    end
+    
+    # Combine the intermediate arrays g and h to obtain the dilation.  Note
+    # that for even sized structuring elements there is a wasted min() or max()
+    # operation every k steps.  However in the interests of keeping the code
+    # clean and simple this is accepted.
+    for n in (D.rad1+1):(D.rad1 + N)
+        # If eroding we want the minimum of g[n+D.rad2] and h[n-D.rad1]
+        # also, gt_lt is >().  Vice-versa for dilation
+        
+        if D.gt_lt(D.g[n + D.rad2], D.h[n - D.rad1])
+            df[n - D.rad1] = D.h[n - D.rad1]
+        else
+            df[n - D.rad1] = D.g[n + D.rad2]
+        end
+        
+    end
+
+    return nothing
+end
 
 #---------------------------------------------------------------------
 """
@@ -682,7 +836,7 @@ end
 
 #------------------------------------------------------------------------
 
-# Unexported function that performs 1D erosion or dilation 
+# Unexported function that performs erosion or dilation 
 
 #=
 Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
@@ -711,13 +865,14 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
     # Rectangular structuring element    
     if uppercase(seType[1:3]) == "REC"
         if length(seSize) == 1
-            k = round.([Int], [seSize, seSize])  # [Int] for v0.5
+            k = round.(Int, [seSize, seSize]) 
         else
-            k = round.([Int], seSize)
+            k = round.(Int, seSize)
         end
 
         dimg = copy(img)
-        
+#=
+        # Old code which was memory intensive
         for c = 1:cols
             dimg[:,c] = erode_dilate1d(img[:,c], k[1], erode_dilate)            
         end
@@ -725,6 +880,22 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         for r = 1:rows
             dimg[r,:] = erode_dilate1d(dimg[r,:], k[2], erode_dilate)            
         end
+
+=#
+        # Inplace code
+
+        # Operate on columns
+        data = erode_dilate1d!_setup(img[:,1], k[1], erode_dilate)
+        for c in 1:cols
+            erode_dilate1d!(view(dimg,:,c), img[:,c], data)            
+        end
+
+        # Process rows of result
+        data = erode_dilate1d!_setup(dimg[1,:], k[2], erode_dilate)
+        for r in 1:rows
+            erode_dilate1d!(view(dimg,r,:), dimg[r,:], data)
+        end
+
         
     # Octagonal structuring element        
     elseif uppercase(seType[1:3]) == "OCT"
@@ -738,72 +909,96 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         # Ensure the diagonal structuring element size is odd so that there is a centre
         # pixel and the resulting octagon is symmetric 
         if iseven(dk); dk = dk+1; end
-#        if iseven(round(k)); k = round(k)+1; end
         
         # First do 2D square dilation
         dimg = imerode_dilate(img, "rect", k, erode_dilate)
         
         # Extract diagonal lines of pixels from dimg and perform 1d dilation on
         # them
-        
+
+dirn = (1,2,3,4)
+
+if 1 in dirn        
         # NE lines, emanating from left edge of image
-        for r = 2:rows
+        # Max no of elements is cols
+        data = erode_dilate1d!_setup(dimg[1,:], dk, erode_dilate)
+        l = dimg[1,:]  # buffers for storing input and output
+        dl = copy(l)
+
+        for r = 1:rows
             cmax = min(r,cols)
-            l = zeros(cmax)
+
             for c = 1:cmax
                 l[c] = dimg[r-c+1, c]
             end
             
-            dl = erode_dilate1d(l, dk, erode_dilate)
+            erode_dilate1d!(dl, l, data, cmax)
+            
             for c = 1:cmax
                 dimg[r-c+1,c] = dl[c]
             end        
         end
+end
+if 2 in dirn        
+        # NE lines, emanating from bottom of image, max no of elements is rows
+        data = erode_dilate1d!_setup(dimg[:,1], dk, erode_dilate)
+        l = dimg[:,1] 
+        dl = copy(l)
 
-
-        # NE lines, emanating from bottom of image    
-        for c = 2:cols-1
+        for c = 2:cols#-1
             rmin = max(1, rows-(cols-c))
-            l = zeros(rows-rmin+1)
+            nelements = rows - rmin + 1
+
             for r = rows:-1:rmin
                 l[r-rmin+1] = dimg[r,c+rows-r]
             end
-            
-            dl = erode_dilate1d(l, dk, erode_dilate) 
+
+            erode_dilate1d!(dl, l, data, nelements)
+
             for r = rows:-1:rmin
                 dimg[r,c+rows-r] = dl[r-rmin+1]
-            end   
+            end
         end
-        
-
+end
+if 3 in dirn        
         # SE lines, emanating from left edge of image
-        for r = 1:rows-1
+        data = erode_dilate1d!_setup(dimg[1,:], dk, erode_dilate)
+        l = dimg[1,:] 
+        dl = copy(l)
+        
+        for r = 1:rows
             cmax = min(rows-r+1,cols)
-            l = zeros(cmax)
+
             for c = 1:cmax
                 l[c] = dimg[r+c-1, c]
             end
             
-            dl = erode_dilate1d(l, dk, erode_dilate)
+            erode_dilate1d!(dl, l, data, cmax)
+            
             for c = 1:cmax
                 dimg[r+c-1,c] = dl[c]
             end        
         end
-        
-        # SE lines, emanating from top of image    
+end
+if 4 in dirn        
+        # SE lines, emanating from top of image
+        data = erode_dilate1d!_setup(dimg[:,1], dk, erode_dilate)
+        l = dimg[:,1] 
+        dl = copy(l)
+
         for c = 2:cols
             rmax = min(rows, cols-c+1)
-            l = zeros(rmax)
             for r = 1:rmax
                 l[r] = dimg[r,c+r-1]
             end
             
-            dl = erode_dilate1d(l, dk, erode_dilate)
+            erode_dilate1d!(dl, l, data, rmax)
+
             for r = 1:rmax
                 dimg[r,c+r-1] = dl[r]
             end        
         end
-        
+end        
     else
         error("Structure element type must be 'rect' or 'oct' ")
     end
