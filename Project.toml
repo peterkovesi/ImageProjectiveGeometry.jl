@@ -1,6 +1,6 @@
 name = "ImageProjectiveGeometry"
 uuid = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
-version = "0.3.1"
+version = "0.3.2"
 author = ["Peter Kovesi <peter.kovesi@gmail.com>"]
 
 [deps]
