@@ -351,14 +351,7 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
     bordermask[radius+1:end-radius, radius+1:end-radius] .= true
     
     # Find maxima, threshold, and apply bordermask
-# v0.6 code to be reinstated when 0.5 goes away
-#    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
-
-# Interim code that runs under 0.5 and 0.6 ** check for 0.7**
-    cimgmx = zeros(Bool, rows, cols)
-    for c = 1:cols, r = 1:rows
-        cimgmx[r,c] = (cimg[r,c] == mx[r,c]) && (cimg[r,c] > thresh) && bordermask[r,c]
-    end
+    cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
 
     
     # Get row, col coords of points.  The following is a clumsy replacement of
@@ -1417,22 +1410,9 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
         
         # Find indices of points that are distance 'r' or greater from
         # boundary on image1 and image2;
-# v0.6 code to be reinstated when 0.5 is retired
-#        n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
-#        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
+        n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
+        n2ind = find((p2[1,:].>r) .& (p2[1,:].<im2rows+1-r) .& (p2[2,:].>r) .& (p2[2,:].<im2cols+1-r))
 
-# interim code that runs under 0.5 and 0.6        
-        tmp = Array{Bool}(undef, npts1)
-        for n = 1:npts1
-            tmp[n] = (p1[1,n]>r) && (p1[1,n]<im1rows+1-r) && (p1[2,n]>r) && (p1[2,n]<im1cols+1-r)
-        end
-        n1ind = findall(tmp)
-
-        tmp = Array{Bool}(undef, npts2)
-        for n = 1:npts2
-            tmp[n] = (p2[1,n]>r) && (p2[1,n]<im2rows+1-r) && (p2[2,n]>r) && (p2[2,n]<im2cols+1-r)
-        end
-        n2ind = findall(tmp)
 
 
 

@@ -120,7 +120,7 @@ end
 function Camera(;fx=1.0, fy=1.0, ppx=0.0, ppy=0.0,
                 k1=0.0, k2=0.0, k3=0.0, p1=0.0, p2=0.0, skew=0.0,
                 rows=0, cols=0,
-                P=[0.0, 0.0, 0.0], Rc_w=eye(3))
+                P=[0.0, 0.0, 0.0], Rc_w=I(3))
     if size(P) != (3,)
         error("Camera position must be a 3x1 array")
     end
@@ -270,17 +270,8 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     # If C.rows and C.cols not empty determine points that are within image bounds
     if computevisibility 
         if C.rows !=0 && C.cols != 0
-# v0.6 code to be reinstated when 0.5 is retired
-#            visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
-#                      (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
-
-# Interim code that runs under 0.5 and 0.6
-            visible = Array{Bool}(undef, length(x_p))
-            for n = 1:length(x_p)
-                visible[n] = (x_p[n] >= 1.0) && (x_p[n] <= convert(Float64,C.cols)) &&
-                             (y_p[n] >= 1.0) && (y_p[n] <= convert(Float64,C.rows))
-            end
-
+           visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
+                     (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
         else
             @warn("Point visibility requested but Camera structure has no image size data")
             visible = Array{Bool}(undef, 0)
@@ -1069,7 +1060,7 @@ function normalise1dpts(ptsa::Array{T1,2}) where T1 <: Real
 
     if any(pts[2,:] .== 0)
         @warn("Attempt to normalise a point at infinity")
-        return pts, eye(2)
+        return pts, I(2)
     end
     
     # Ensure homogeneous coords have scale of 1
