@@ -142,3 +142,10 @@ F1 = F1/F1[3,3]  # Adjust matrices to the same scale
 F2 = F2/F2[3,3]
 
 @test maximum(abs.(F1 - F2)) < tol
+
+# solvestereopt
+res = []
+for i in 1:12
+          push!(res, maximum(makeinhomogeneous(solvestereopt([xy1[:,i] xy2[:,i]], [Cam1, Cam2])) .- pts[:,i] ) < tol)
+end
+@test all(res)
