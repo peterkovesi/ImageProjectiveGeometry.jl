@@ -1903,11 +1903,11 @@ function solvestereopt(xy::Array{T,2}, C::Array{Camera}; reprojecterror=false) w
     # Correct image points from each camera so that they correspond to image
     # points from an ideal camera with no lens distortion.  Also generate the
     # corresponding ideal projection matrices for each Camera structure
-    xyideal = zeros(size(xy)) # copy xy so that xy is not changed
+    xyideal = similar(xy) # copy xy so that xy is not changed
     for n = 1:N
         xyideal[:,n] = idealimagepts(C[n], xy[:,n])
-        P[n] = camstruct2projmatrix(C[n])
     end
+    P = [camera2projmatrix(c) for c in C]
 
     return solvestereopt(xyideal, P, reprojecterror=reprojecterror)
 end
