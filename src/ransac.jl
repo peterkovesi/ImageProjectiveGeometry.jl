@@ -162,7 +162,7 @@ function ransac(x, fittingfn, distfn, degenfn, s, t, feedback = false,
             # Safeguard against being stuck in this loop forever
             count += 1
             if count > maxDataTrials
-                warn("Unable to select a nondegenerate data set")
+                @warn("Unable to select a nondegenerate data set")
                 break
             end
         end
