@@ -1,7 +1,8 @@
 ImageProjectiveGeometry
 =======================
 
-[![Build Status](https://travis-ci.org/peterkovesi/ImageProjectiveGeometry.jl.svg?branch=master)](https://travis-ci.org/peterkovesi/ImageProjectiveGeometry.jl)
+[![Build status (Github Actions)](https://github.com/peterkovesi/ImageProjectiveGeometry.jl/workflows/CI/badge.svg)](https://github.com/peterkovesi/ImageProjectiveGeometry.jl/actions)
+[![codecov.io](http://codecov.io/github/peterkovesi/ImageProjectiveGeometry.jl/coverage.svg?branch=main)](http://codecov.io/github/peterkovesi/ImageProjectiveGeometry.jl?branch=main)
 
 ----------------------------------------------
 
