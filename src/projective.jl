@@ -830,7 +830,7 @@ See also: hnormalise()
 """
 function hnormalise!(x::Union{Array{T,2},Vector{T}}) where T <: Real
     
-    (rows, npts) = (size(x,1), size(x,2))
+    (rows, npts) = (size(x,1), size(x,2))  # This handles 2D arrays and vectors
 
     for n = 1:npts
         if abs(x[rows, n]) > eps(T)   # point not at infinity
@@ -1335,7 +1335,7 @@ function affinefundmatrix(x1::Array{T1,2}, x2::Array{T2,2}) where {T1<:Real,T2<:
         error("x1 and x2 must have same dimensions")
     end
 
-    (dim, npts) = size(x1, 1, 2)
+    (dim, npts) = size(x1)
 
     if dim != 2
         error("pts must be a 2xN array of inhomogeneous image coords")
