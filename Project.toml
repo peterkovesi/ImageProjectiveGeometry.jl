@@ -1,7 +1,7 @@
 name = "ImageProjectiveGeometry"
 uuid = "b9d14576-938f-5430-9d4c-b7d7de1409d6"
 author = ["Peter Kovesi <peter.kovesi@gmail.com>"]
-version = "0.3.4"
+version = "0.3.5"
 
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
