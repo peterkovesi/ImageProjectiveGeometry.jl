@@ -155,7 +155,7 @@ end
 res = []
 for i in 1:12
      dist = norm(pts[:,i] - Cam1.P)
-     ray = normalize(imagept2ray(Cam1, xy1[1,i], xy1[2,i]))
+     ray = imagept2ray(Cam1, xy1[1,i], xy1[2,i])
      target = dist * ray + Cam1.P
      push!(res, norm(target - pts[:,i]) < tol)
 end
