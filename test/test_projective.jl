@@ -51,6 +51,10 @@ P = camera2projmatrix(Cam)
 @test abs(K[1,3] - ppx) < rows*tol
 @test abs(K[2,3] - ppy) < rows*tol
 
+# imagept2plane with camera matrix
+planept = imagept2plane(P, Pc_d, xy, planeP, planeN)
+@test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
+
 # makehomogeneous makeinhomoheneous hnormalise
 x = rand(2,4)
 hx = makehomogeneous(x)
