@@ -369,6 +369,18 @@ end
 
 # Case when the camera is represented by a projection matrix
 
+function imagept2plane(Proj::Array, cameraP::Vector, xy::Array, planeP::Vector, planeN::Vector)
+    (dim, N) = (size(xy,1), size(xy,2))  # xy might be a Vector
+    if dim != 2
+        error("Image xy data must be a 2 x N array")
+    end
+    res = zeros(3, N)
+    for i in 1:N
+        res[:,N] = imagept2plane(Proj, cameraP, xy[:,i], planeP, planeN)
+    end
+    res
+end
+
 function imagept2plane(Proj::Array, cameraP::Vector, xy::Vector, planeP::Vector, planeN::Vector)
     
     if size(Proj) != (3,4) 
