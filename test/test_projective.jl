@@ -149,3 +149,15 @@ for i in 1:12
           push!(res, maximum(makeinhomogeneous(solvestereopt([xy1[:,i] xy2[:,i]], [Cam1, Cam2])) .- pts[:,i] ) < tol)
 end
 @test all(res)
+
+# imagept2ray
+# construct rays for projected image coordinates and compare with original points
+res = []
+for i in 1:12
+     dist = norm(pts[:,i] - Cam1.P)
+     ray = imagept2ray(Cam1, xy1[1,i], xy1[2,i])
+     target = dist * ray + Cam1.P
+     push!(res, norm(target - pts[:,i]) < tol)
+end
+@test all(res)
+

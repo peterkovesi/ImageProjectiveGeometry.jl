@@ -528,7 +528,7 @@ function imagept2ray!(ray, C::Camera, x, y)
     # in terms of the camera frame.  Rotate to get the viewing rays in
     # the world frame 
     # ray = C.Rc_w'*ray
-    A_mul_B!(ray, C.Rc_w', [x_n, y_n, 1])
+    mul!(ray, C.Rc_w', [x_n, y_n, 1])
 
     normalize!(ray)
     return ray
