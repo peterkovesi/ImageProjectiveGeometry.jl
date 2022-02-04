@@ -112,7 +112,7 @@ mutable struct Camera
     rows::Int       # Optional, providing rows and columns allows detection
     cols::Int       # of points being projected out of image bounds.
     P::Vector{Float64}    # Camera position in world coordinates.
-    Rc_w::Array{Float64}  # Rotation matrix defining world orientation with
+    Rc_w::Matrix{Float64}  # Rotation matrix defining world orientation with
                           # respect to the camera frame.
 end
 
