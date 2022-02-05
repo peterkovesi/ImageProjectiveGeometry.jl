@@ -40,12 +40,13 @@ planept = imagept2plane(Cam, xy, planeP, planeN)
 @test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
 
 #same test as above with radial distortion
-Cam.k1=-0.2
-Cam.k2=0.2
-Cam.k3=-0.2
+dCam=deepcopy(Cam)
+dCam.k1=-0.2
+dCam.k2=0.2
+dCam.k3=-0.2
 
-xy = cameraproject(Cam, [gpt1 gpt2])
-planept = imagept2plane(Cam, xy, planeP, planeN,:iterative)
+dxy = cameraproject(dCam, [gpt1 gpt2])
+planept = imagept2plane(dCam, dxy, planeP, planeN)
 @test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
 
 # Convert Cam structure to projection matrix and decompose to see if we get the same parameters back
