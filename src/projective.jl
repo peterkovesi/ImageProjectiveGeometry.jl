@@ -340,7 +340,8 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     # distortion factor to get an approximation of the undistorted normalised
     # image coordinates (with no skew)
 
-    # inverse of the radial distortion is calculated by iteration
+    # inverse of the radial distortion is calculated by iteration 
+    # (see e.g., Drap&Lefèvre 2015, doi: 10.3390/s16060807)
     # non-convergence of the mothod happens if an image point has no corresponding 
     # point on the plane, due to distortion. This is not caught currently
     
