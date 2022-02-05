@@ -40,10 +40,8 @@ planept = imagept2plane(Cam, xy, planeP, planeN)
 @test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
 
 #same test as above with radial distortion
-dCam=deepcopy(Cam)
-dCam.k1=-0.2
-dCam.k2=0.2
-dCam.k3=-0.2
+dCam = Camera(P=[X, Y, Z], Rc_w=Rc_w, fx=f, fy=f, ppx=ppx, ppy=ppy, 
+     skew=skew, k1=-0.2, k2=0.2, k3=-0.2, rows=rows, cols=cols)
 
 dxy = cameraproject(dCam, [gpt1 gpt2])
 planept = imagept2plane(dCam, dxy, planeP, planeN)

@@ -345,8 +345,8 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     # non-convergence of the mothod happens if an image point has no corresponding 
     # point on the plane, due to distortion. This is not caught currently
     
-    x_n=deepcopy(x_d)
-    y_n=deepcopy(y_d)
+    x_n = copy(x_d)
+    y_n = copy(y_d)
     for i=1:N
         trd=0.0
         rsq=0.0
