@@ -112,7 +112,7 @@ mutable struct Camera
     rows::Int       # Optional, providing rows and columns allows detection
     cols::Int       # of points being projected out of image bounds.
     P::Vector{Float64}    # Camera position in world coordinates.
-    Rc_w::Array{Float64}  # Rotation matrix defining world orientation with
+    Rc_w::Matrix{Float64}  # Rotation matrix defining world orientation with
                           # respect to the camera frame.
 end
 
@@ -339,8 +339,27 @@ function imagept2plane(C::Camera, xy::Array, planeP::Vector, planeN::Vector)
     # Subtract the tangential distortion components and divide by the radial
     # distortion factor to get an approximation of the undistorted normalised
     # image coordinates (with no skew)
-    x_n = (x_d .- dtx)./r_d
-    y_n = (y_d .- dty)./r_d
+
+    # inverse of the radial distortion is calculated by iteration 
+    # (see e.g., Drap&Lefèvre 2015, doi: 10.3390/s16060807)
+    # non-convergence of the mothod happens if an image point has no corresponding 
+    # point on the plane, due to distortion. This is not caught currently
+    
+    x_n = copy(x_d)
+    y_n = copy(y_d)
+    for i=1:N
+        trd=0.0
+        rsq=0.0
+        for _=1:100
+            rsq=x_n[i]^2+y_n[i]^2
+            trd = 1 + C.k1*rsq + C.k2*rsq^2 + C.k3*rsq^3
+            abs(x_n[i] - x_d[i]/trd) <1e-8 && abs(y_n[i] - y_d[i]/trd) <1e-8 && break #convergence check
+            x_n[i] = x_d[i] / trd
+            y_n[i] = y_d[i] / trd
+        end
+        x_n[i] = (x_d[i] - dtx[i]) / trd
+        y_n[i] = (y_d[i] - dty[i]) / trd
+    end
 
     # Define a set of points at the normalised distance of z = 1 from the
     # principal point, these define the viewing rays in terms of the camera

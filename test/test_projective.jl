@@ -34,10 +34,17 @@ gpt2 = [100.0, -200.0, 0.0]
 (xy, visible) = cameraproject(Cam, [gpt1 gpt2], computevisibility=true)  # project to image
 
 # Then project image points to ground plane to see if we reconstruct them
-# ** Note this does not seem to work with lens distortion
 planeP = [0.0,0.0,0.0]
 planeN = [0.0,0.0,1.0]
 planept = imagept2plane(Cam, xy, planeP, planeN)
+@test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
+
+#same test as above with radial distortion
+dCam = Camera(P=[X, Y, Z], Rc_w=Rc_w, fx=f, fy=f, ppx=ppx, ppy=ppy, 
+     skew=skew, k1=-0.2, k2=0.2, k3=-0.2, rows=rows, cols=cols)
+
+dxy = cameraproject(dCam, [gpt1 gpt2])
+planept = imagept2plane(dCam, dxy, planeP, planeN)
 @test maximum(abs.(planept - [gpt1 gpt2])) < f*tol
 
 # Convert Cam structure to projection matrix and decompose to see if we get the same parameters back
