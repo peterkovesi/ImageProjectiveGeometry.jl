@@ -22,7 +22,7 @@ PK April 2016 Initial version
 ---------------------------------------------------------------------=#
 
 export derivative3, derivative5, derivative7
-export nonmaxsuppts
+export nonmaxsuppts, briefcoords
 export dilate1d, erode1d, imdilate, imerode, circularstruct
 export gaussfilt
 export imgnormalise, imgnormalize, histtruncate
@@ -33,7 +33,7 @@ export grey2census, grey2lbp, grey2lbp!
 export keypause
 
 using LinearAlgebra, Statistics
-import DSP, Images, ImageFiltering #, PyPlot
+import DSP, Images, ImageFiltering
 
 #----------------------------------------------------------------------
 """
@@ -326,7 +326,8 @@ all be marked as local maxima.
 See also: harris(), noble(), shi_tomasi(), hessianfeatures()
 """
 function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
-                      N::Int=typemax(Int), subpixel::Bool=false, img=[], fig = nothing) where T <: Real
+                      N::Int=typemax(Int), subpixel::Bool=false, img=[], 
+                      disp=false, fig = nothing) where T <: Real
 
     #=
     September 2003  Original MATLAB version
@@ -415,20 +416,13 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
         end
     end
 
-    # # If an image has been supplied display it and overlay corners.
-    # if !isempty(img)
-    #     PyPlot.figure(fig)
-    #     PyPlot.clf()
-    #     PyPlot.imshow(img)
-    #     PyPlot.set_cmap(PyPlot.ColorMap("gray"))
-    #     if subpixel
-    #         PyPlot.plot(csubpix,rsubpix,"r+")
-    #     else
-    #         PyPlot.plot(c,r,"r+")
-    #     end
-    #     PyPlot.axis([1,cols,rows,1])
-    #     PyPlot.title("Corners detected")
-    # end
+    if disp
+        if subpixel
+            plot_nonmaxsuppts(fig, img, csubpix, rsubpix, cols, rows)
+        else
+            plot_nonmaxsuppts(fig, img, c, r, cols, rows)
+        end
+    end
 
     if subpixel
         return rsubpix, csubpix
@@ -1662,31 +1656,9 @@ function briefcoords(S, nPairs, UorG; disp=false)
     end
 
     # # Diagnostic display
-    # if disp
-    #     figure(200); clf
-    #     R = (S-1)/2 + 1
-    #     axis([-R, R, -R, R])
-
-    #     for n = 1:nPairs
-    #         plot(rc[2, 2*n-1:2*n], rc[1, 2*n-1:2*n], color = rand(3),
-    #              linewidth = 3)
-    #         hold(true)
-    #     end
-
-    #     axis("equal")
-    #     hold(false)
-
-    #     # Determine distances between pairs and display histogram
-    #     sdist = zeros(nPairs)
-    #     for n = 1:nPairs
-    #         sdist[n] = norm(rc[:,2*n-1] - rc[:,2*n])
-    #     end
-
-    #     (e, counts) = hist(sdist, 0:.5:S)
-    #     figure(30); clf()
-    #     PyPlot.bar(left=e[1:end-1], height = counts, width=e[2]-e[1])
-    #     title("Histogram of distances between pairs")
-    # end
+    if disp
+        plot_briefcoords(S, nPairs, rc)
+    end
 
     return rc
 end

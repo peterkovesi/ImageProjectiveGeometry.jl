@@ -163,8 +163,9 @@ include("projective.jl")
 include("transforms3d.jl")
 include("ransac.jl")
 include("cornerfeatures.jl")
-# include("utilities.jl")
+include("utilities.jl")
 # include("ransacdemo.jl")
 include("geometry.jl")
+include("plotting.jl")
 
 end  # module
