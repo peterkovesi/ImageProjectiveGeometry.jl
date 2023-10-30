@@ -271,7 +271,8 @@ function cameraproject(C::Camera, pta::Array; computevisibility = false)
     if computevisibility
         if C.rows !=0 && C.cols != 0
            visible = (x_p .>= 1.0) .& (x_p .<= convert(Float64,C.cols)) .&
-                     (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows))
+                     (y_p .>= 1.0) .& (y_p .<= convert(Float64,C.rows)) .& 
+                     (pt[3:3,:] .>= 0.0) # Make sure points are not behind camera
         else
             @warn("Point visibility requested but Camera structure has no image size data")
             visible = Array{Bool}(undef, 0)
