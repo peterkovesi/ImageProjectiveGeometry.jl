@@ -3,6 +3,8 @@ using LinearAlgebra
 using ImageProjectiveGeometry
 using PyPlot
 
+include("ransacdemo.jl")
+
 
 function plot_briefcoords(S, nPairs, rc)
     figure(200); clf
@@ -44,6 +46,26 @@ function plot_nonmaxsuppts(fig, img, c, r, cols, rows)
 end
 
 
+"""
+hline - Plot a 2D line defined in homogeneous coordinates.
+
+Function for ploting 2D homogeneous lines defined by 2 points
+or a line defined by a single homogeneous vector
+```
+Usage 1:   hline(p1,p2, linestyle="b-")
+Arguments: p1, p2 -  Two 3-vectors defining points in homogeneous
+                     coordinates
+
+Usage 2:    hline(l, linestyle="b-")
+Argument:   l - A 3-vector defining a line in homogeneous coordinates
+
+```
+Note that in the case where a homogeneous line is supplied as the
+argument the extent of the line drawn depends on the current axis
+limits.  This will require you to set the desired limits with a call
+to PyPlot.axis() prior to calling this function.
+
+"""
 function hline(p1i::Vector, p2i::Vector, linestyle::String="b-")
     # Case when 2 homogeneous points are supplied
 
@@ -72,6 +94,33 @@ function hline(li::Vector, linestyle::String="b-")
     plot([p1[1], p2[1]], [p1[2], p2[2]], linestyle);
 end
 
+
+"""
+plotcamera - Plots graphical representation of camera(s) showing pose.
+
+```
+Usage: plotcamera(C, l; col=[0,0,1], plotCamPath=false, fig=nothing)
+
+Arguments:
+           C - Camera structure (or array of Camera structures)
+           l - The length of the sides of the rectangular cone indicating
+               the camera's field of view.
+Keyword Arguments:
+         col - Optional three element vector specifying the RGB colour to
+               use. Defaults to blue.
+ plotCamPath - Optional flag true/false to plot line joining camera centre
+               positions. If omitted or empty defaults to false.
+         fig - Optional figure number to be used. If not specified a new
+               figure is created.
+```
+
+The function plots into the current figure a graphical representation of one
+or more cameras showing their pose.  This consists of a rectangular cone,
+with its vertex at the camera centre, indicating the camera's field of view.
+The camera's coordinate X and Y axes are also plotted at the camera centre.
+
+See also: Camera
+"""
 function plotcamera(Ci, l, col=[0,0,1], plotCamPath=false, fig=nothing)
 
     if isa(Ci, Array)
@@ -81,8 +130,7 @@ function plotcamera(Ci, l, col=[0,0,1], plotCamPath=false, fig=nothing)
     end
 
     figure(fig)
-#    hold(true)
-    for i = 1:length(C)
+    for i = 1:eachindex(C)
 
         if C[i].rows == 0 || C[i].cols == 0
             @warn("Camera rows and cols not specified")
@@ -145,3 +193,4 @@ function plotcamera(Ci, l, col=[0,0,1], plotCamPath=false, fig=nothing)
 end
 
 end # module
+

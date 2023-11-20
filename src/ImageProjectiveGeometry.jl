@@ -164,8 +164,12 @@ include("transforms3d.jl")
 include("ransac.jl")
 include("cornerfeatures.jl")
 include("utilities.jl")
-# include("ransacdemo.jl")
 include("geometry.jl")
 include("plotting.jl")
+
+# to keep compatibility with older Julia Versions, include this if we cannot do weak deps
+if !isdefined(Base, :get_extension)
+  include("../ext/ImageProjectiveGeometryPyPlotExt.jl")
+end
 
 end  # module
