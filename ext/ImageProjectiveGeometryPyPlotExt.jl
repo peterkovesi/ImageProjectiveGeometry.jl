@@ -6,7 +6,6 @@ isdefined(Base, :get_extension) ? (using ImageProjectiveGeometry) : (using ..Ima
 
 include("ransacdemo.jl")
 
-
 function plot_briefcoords(S, nPairs, rc)
     figure(200); clf
         R = (S.-1)/2 .+ 1

@@ -20,10 +20,10 @@ PK March     2016
 
 ---------------------------------------------------------------------=#
 
-export fitlinedemo, fitplanedemo
-export fitfunddemo, fithomogdemo
+# export fitlinedemo, fitplanedemo
+# export fitfunddemo, fithomogdemo
 
-using ImageProjectiveGeometry, PyPlot, Printf, FileIO
+# using ImageProjectiveGeometry, PyPlot, Printf, FileIO
 
 #-----------------------------------------------------------------------
 """
@@ -96,7 +96,7 @@ function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     (V, P, inliers) = ransacfitline(XYZ, t, feedback)
     
     if feedback
-        @printf("Number of Inliers: %d\n", length(inliers))
+	println("Number of Inliers: $(length(inliers))")
     end
 
     # Plot the inlier points blue, with the outlier points in red.
@@ -189,10 +189,10 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     (Bfitted, P, inliers) = ransacfitplane(XYZ, t, feedback)
 
     Bfitted = Bfitted/Bfitted[4]
-    @printf("Original plane coefficients:  ")
-    @printf("%8.3f %8.3f %8.3f %8.3f \n",B[1], B[2], B[3], B[4])
-    @printf("Fitted plane coefficients:    ")
-    @printf("%8.3f %8.3f %8.3f %8.3f \n",Bfitted[1], Bfitted[2], Bfitted[3], Bfitted[4])
+    print("Original plane coefficients:  ")
+    print("%8.3f %8.3f %8.3f %8.3f \n",B[1], B[2], B[3], B[4])
+    print("Fitted plane coefficients:    ")
+    print("%8.3f %8.3f %8.3f %8.3f \n",Bfitted[1], Bfitted[2], Bfitted[3], Bfitted[4])
 
     # Display the triangular patch formed by the 3 points that gave the
     # plane of maximum consensus
@@ -201,8 +201,8 @@ function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     plot3D(pts[:,1], pts[:,2], pts[:,3], "k-")
 #    hold(false)
     
-    @printf("\nRotate image so that the triangular patch is seen edge on\n")
-    @printf("These are the points that form the plane of max consensus.\n\n")
+    print("\nRotate image so that the triangular patch is seen edge on\n")
+    print("These are the points that form the plane of max consensus.\n\n")
 
 end
 
@@ -246,7 +246,7 @@ function fitfunddemo(img1=[], img2=[])
     figure(2); axis("off"); 
     keypause()
 
-    @printf("Matching features...\n")
+    print("Matching features...\n")
     (m1,m2) = matchbycorrelation(copy(img1), [r1';c1'], copy(img2), [r2';c2'], w, dmax)
     
     # Display putative matches
@@ -271,9 +271,9 @@ function fitfunddemo(img1=[], img2=[])
     (F, inliers) = ransacfitfundmatrix(x1, x2, t, true)
 #   (F, inliers) = ransacfitaffinefundmatrix(x1, x2, t, true)    
 
-    @printf("Number of inliers was %d (%d%%) \n", 
+    print("Number of inliers was %d (%d%%) \n", 
 	    length(inliers),round(Int, 100*length(inliers)/nMatch))
-    @printf("Number of putative matches was %d \n", nMatch)
+    print("Number of putative matches was %d \n", nMatch)
     
     # Display both images overlayed with inlying matched feature points
     figure(4); clf();  imshow(img1);  axis("off") # hold(true)
@@ -285,7 +285,7 @@ function fitfunddemo(img1=[], img2=[])
     title("Inlying matches")
 #    hold(false)
 
-    @printf("Step through each epipolar line [y/n]?\n")
+    print("Step through each epipolar line [y/n]?\n")
     response = readline()
     if response[1] == 'n'
 	return
@@ -320,7 +320,7 @@ function fitfunddemo(img1=[], img2=[])
 	keypause()
     end
 
-    @printf("                                         \n")
+    print("                                         \n")
 
 end    
 
@@ -357,7 +357,7 @@ function fithomogdemo(img1=[], img2=[])
     (cim1, r1, c1) = shi_tomasi(img1, 1, radius=nonmaxrad, N=100, img=img1, fig=1)
     (cim2, r2, c2) = shi_tomasi(img2, 1, radius=nonmaxrad, N=100, img=img2, fig=2)
     keypause()
-    @printf("Matching features...\n")
+    print("Matching features...\n")
     (m1,m2) = matchbycorrelation(img1, [r1';c1'], img2, [r2';c2'], w, dmax)
 
     # Display putative matches
@@ -377,9 +377,9 @@ function fithomogdemo(img1=[], img2=[])
     t = .001  # Distance threshold for deciding outliers
     (H, inliers) = ransacfithomography(x1, x2, t)
 
-    @printf("Number of inliers was %d (%d%%) \n", 
+    print("Number of inliers was %d (%d%%) \n", 
 	    length(inliers),round(Int, 100*length(inliers)/nMatch))
-    @printf("Number of putative matches was %d \n", nMatch) 
+    print("Number of putative matches was %d \n", nMatch) 
     
     # Display both images overlayed with inlying matched feature points
     figure(4); clf();  imshow(img1);  # hold(true)
@@ -390,6 +390,5 @@ function fithomogdemo(img1=[], img2=[])
     end
 
     title("Inlying matches")
-#    hold(false)
 end
 

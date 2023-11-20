@@ -17,7 +17,7 @@ all copies or substantial portions of the Software.
 The Software is provided "as is", without warranty of any kind.
 
 PK February  2016
-   September 2018 - Updates for v0.7/v1.0
+September 2018 - Updates for v0.7/v1.0
 
 
 ----------------------------------------------------------------------------=#
@@ -165,15 +165,16 @@ include("ransac.jl")
 include("cornerfeatures.jl")
 include("utilities.jl")
 include("geometry.jl")
+include("plotting.jl")
 
 # This symbol is only defined on Julia versions that support extensions
 if !isdefined(Base, :get_extension)
-using Requires
+  using Requires
 end
-if !isdefined(Base, :get_extension)
 function __init__()
+  @static if !isdefined(Base, :get_extension)
     Requires.@require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" include("../ext/ImageProjectiveGeometryPyPlotExt.jl")
-end
+  end
 end
 
 end  # module

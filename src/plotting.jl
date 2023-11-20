@@ -1,6 +1,9 @@
-export hline, plotcamera
 
 function get_plot_backend()
+    if !isdefined(Base, :get_extension)
+        error("PyPlot extension not loaded...")
+    end
+
     ext = Base.get_extension(@__MODULE__, :ImageProjectiveGeometryPyPlotExt)
     # TODO: add different plotting backends
     if ext === nothing
@@ -81,4 +84,24 @@ See also: Camera
 function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     ext = get_plot_backend()
     return ext.plotcamera(Ci, l, col, plotCamPath, fig)
+end
+
+function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
+    ext = get_plot_backend()
+    return ext.fitlinedemo(outliers, sigma, t, feedback)
+end
+
+function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
+    ext = get_plot_backend()
+    return ext.fitplanedemo(outliers, sigma, t, feedback)
+end
+
+function fitfunddemo(img1=[], img2=[])
+    ext = get_plot_backend()
+    return ext.fitfunddemo(img1, img2)
+end
+
+function fithomogdemo(img1=[], img2=[])
+    ext = get_plot_backend()
+    return ext.fithomogdemo(img1, img2)
 end
