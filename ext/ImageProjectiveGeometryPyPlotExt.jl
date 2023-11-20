@@ -1,7 +1,8 @@
 module ImageProjectiveGeometryPyPlotExt
 using LinearAlgebra
-using ImageProjectiveGeometry
 using PyPlot
+
+isdefined(Base, :get_extension) ? (using ImageProjectiveGeometry) : (using ..ImageProjectiveGeometry)
 
 include("ransacdemo.jl")
 
