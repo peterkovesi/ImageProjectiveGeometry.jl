@@ -1,8 +1,8 @@
 module ImageProjectiveGeometryPyPlotExt
 using LinearAlgebra
+using Random
 using PyPlot
-
-isdefined(Base, :get_extension) ? (using ImageProjectiveGeometry) : (using ..ImageProjectiveGeometry)
+using ImageProjectiveGeometry
 
 include("ransacdemo.jl")
 

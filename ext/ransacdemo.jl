@@ -20,12 +20,6 @@ PK March     2016
 
 ---------------------------------------------------------------------=#
 
-# export fitlinedemo, fitplanedemo
-# export fitfunddemo, fithomogdemo
-
-# using ImageProjectiveGeometry, PyPlot, Printf, FileIO
-
-#-----------------------------------------------------------------------
 """
 fitlinedemo - Demonstrates RANSAC line fitting.
 

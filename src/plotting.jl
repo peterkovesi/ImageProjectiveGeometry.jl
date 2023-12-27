@@ -1,11 +1,18 @@
+export fitlinedemo, fitplanedemo
+export fitfunddemo, fithomogdemo
+export hline, plotcamera
+export plot_briefcoords, plot_nonmaxsuppts
 
+
+# This function is used to not have the extensions have to overwrite the dfferent
+# plotting fucntions, which would raise a precompilation warning.
+# This also allows implementing a smarter way to select the correct plutting
+# backend in case multiple backends are loaded (I would however doubt this 
+# would ever happen).
+# If another extension module is implemented (Makie for example), implement
+# checking for it here. 
 function get_plot_backend()
-    if !isdefined(Base, :get_extension)
-        error("PyPlot extension not loaded...")
-    end
-
     ext = Base.get_extension(@__MODULE__, :ImageProjectiveGeometryPyPlotExt)
-    # TODO: add different plotting backends
     if ext === nothing
         error("PyPlot extension not loaded...")
     else
@@ -86,22 +93,102 @@ function plotcamera(Ci, l; col=[0,0,1], plotCamPath=false, fig=nothing)
     return ext.plotcamera(Ci, l, col, plotCamPath, fig)
 end
 
+"""
+fitlinedemo - Demonstrates RANSAC line fitting.
+
+Function generates a noisy set of data points with outliers and uses
+RANSAC to fit a line.
+
+```
+Usage: fitlinedemo(outliers, sigma, t, feedback=false)
+
+Arguments:
+              outliers - Fraction specifying how many points are to be
+                         outliers.
+              sigma    - Standard deviation of inlying points from the
+                         true line.
+              t        - Distance threshold to be used by the RANSAC
+                         algorithm for deciding whether a point is an
+                         inlier. 
+              feedback - Optional Boolean flag turn on RANSAC feedback
+                         information.
+
+Try using:  fitlinedemo(0.3, 0.05, 0.05)
+```
+See also: ransacfitplane(), fitplane()
+"""
 function fitlinedemo(outliers, sigma, t::Real, feedback::Bool = false)
     ext = get_plot_backend()
     return ext.fitlinedemo(outliers, sigma, t, feedback)
 end
 
+"""
+fitplanedemo - Demonstrates RANSAC plane fitting
+
+Function generates a noisy set of data points with outliers and uses
+RANSAC to fit a plane.
+
+```
+Usage: fitplanedemo(outliers, sigma, t, feedback)
+
+Arguments:
+              outliers - Fraction specifying how many points are to be
+                         outliers.
+              sigma    - Standard deviation of inlying points from the
+                         true plane.
+              t        - Distance threshold to be used by the RANSAC
+                         algorithm for deciding whether a point is an
+                         inlier. 
+              feedback - Optional flag 0 or 1 to turn on RANSAC feedback
+                         information.
+
+Try using:  fitplanedemo(0.3, 0.02, 0.05)
+```
+See also: ransacfitplane(), fitplane()
+"""
 function fitplanedemo(outliers, sigma, t, feedback::Bool = false)
     ext = get_plot_backend()
     return ext.fitplanedemo(outliers, sigma, t, feedback)
 end
 
+"""
+fitfunddemo - Example of fundamental matrix computation
+
+Demonstration of feature matching via simple correlation, and then using
+RANSAC to estimate the fundamental matrix and at the same time identify
+(mostly) inlying matches
+```
+Usage:  fitfunddemo           - Demonstrates fundamental matrix calculation
+                                on two default images.
+        funddemo(img1,img2)   - Computes fundamental matrix on two supplied
+                                images.
+```
+Edit code as necessary to tweak parameters
+
+See also: ransacfitfundmatrix(), fundmatrix()
+"""
 function fitfunddemo(img1=[], img2=[])
     ext = get_plot_backend()
     return ext.fitfunddemo(img1, img2)
 end
 
+"""
+fithomogdemo - Example of finding a homography
+
+Demonstration of feature matching via simple correlation, and then using
+RANSAC to estimate the homography between two images and at the same time
+identify (mostly) inlying matches
+```
+Usage:  fithomogdemo            - Demonstrates homography calculation on two 
+                                  default images
+        fithomogdemo(img1,img2) - Computes homography on two supplied images
+
+Edit code as necessary to tweak parameters
+```
+See also: ransacfithomography(), homography2d()
+"""
 function fithomogdemo(img1=[], img2=[])
     ext = get_plot_backend()
     return ext.fithomogdemo(img1, img2)
 end
+

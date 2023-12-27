@@ -167,14 +167,4 @@ include("utilities.jl")
 include("geometry.jl")
 include("plotting.jl")
 
-# This symbol is only defined on Julia versions that support extensions
-if !isdefined(Base, :get_extension)
-  using Requires
-end
-function __init__()
-  @static if !isdefined(Base, :get_extension)
-    Requires.@require PyPlot="d330b81b-6aea-500a-939a-2ce795aea3ee" include("../ext/ImageProjectiveGeometryPyPlotExt.jl")
-  end
-end
-
 end  # module
