@@ -10,7 +10,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in 
+The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 
 The Software is provided "as is", without warranty of any kind.
@@ -22,7 +22,7 @@ PK April 2016 Initial version
 ---------------------------------------------------------------------=#
 
 export derivative3, derivative5, derivative7
-export nonmaxsuppts
+export nonmaxsuppts, briefcoords
 export dilate1d, erode1d, imdilate, imerode, circularstruct
 export gaussfilt
 export imgnormalise, imgnormalize, histtruncate
@@ -33,7 +33,7 @@ export grey2census, grey2lbp, grey2lbp!
 export keypause
 
 using LinearAlgebra, Statistics
-import DSP, Images, ImageFiltering, PyPlot
+import DSP, Images, ImageFiltering
 
 #----------------------------------------------------------------------
 """
@@ -61,7 +61,7 @@ Returns:
  Example:
    Compute 1st derivatives in x and y
    (gx, gy) = derivative3(img, ("x", "y"))
-```                                           
+```
 See also: derivative5(), derivative7()
 """
 function derivative3(img::Array{T,2}, spec) where T <: Real
@@ -70,22 +70,22 @@ function derivative3(img::Array{T,2}, spec) where T <: Real
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
-        fimg = float(img) 
+        fimg = float(img)
     else
         fimg = img
     end
 
     # 3-Tap filters
     p = [0.229879,  0.540242,  0.229879]
-    
+
     # ?? Coefficients seem too small added the division...??
     d1 =[0.425287,  0.000000, -0.425287]/0.8506
-    
+
     # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
     G = Array{Array}(undef, length(spec))
-    
+
     for n = 1:length(spec)
       if spec[n] == "x"
           G[n] = DSP.conv(p, d1, fimg)[2:end-1, 2:end-1]
@@ -96,7 +96,7 @@ function derivative3(img::Array{T,2}, spec) where T <: Real
           error(" $badspec is an unrecognized derivative option")
       end
     end
-    
+
     return tuple(G...)
 end
 
@@ -128,7 +128,7 @@ Returns:
  Examples:
    Just compute 1st derivatives in x and y
    (gx, gy) = derivative5(img, ("x", "y"))
-                                           
+
    Compute 2nd derivative in x, 1st derivative in y and 2nd derivative in y
    (gxx, gy, gyy) = derivative5(img, ("xx", "y", "yy"))
 ```
@@ -140,7 +140,7 @@ function derivative5(img::Array{T,2}, spec) where T <: Real
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
-        fimg = float(img) 
+        fimg = float(img)
     else
         fimg = img
     end
@@ -150,20 +150,20 @@ function derivative5(img::Array{T,2}, spec) where T <: Real
     # use 2nd derivative filters and interpolant coefficients.
     # Detection is done by seeing if any of the derivative specifier
     # arguments is longer than 1 char, this implies 2nd derivative needed.
-    secondDeriv = false    
+    secondDeriv = false
     for n = 1:length(spec)
         if length(spec[n]) > 1
             secondDeriv = true
             break
         end
     end
-    
+
     if !secondDeriv
         # 5 tap 1st derivative cofficients.  These are optimal if you are just
         # seeking the 1st deriavtives
         p = [0.037659,  0.249153,  0.426375,  0.249153,  0.037659]
         d1 =[0.109604,  0.276691,  0.000000, -0.276691, -0.109604]
-    else         
+    else
         # 5-tap 2nd derivative coefficients. The associated 1st derivative
         # coefficients are not quite as optimal as the ones above but are
         # consistent with the 2nd derivative interpolator p and thus are
@@ -176,7 +176,7 @@ function derivative5(img::Array{T,2}, spec) where T <: Real
     # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then
     # a 1D convolution along the rows using d1. etc etc.
-    # Note that the result has to be trimmed becasue conv expands the 
+    # Note that the result has to be trimmed becasue conv expands the
     # result due to size of the filter
     G = Array{Array}(undef,length(spec))
 
@@ -196,7 +196,7 @@ function derivative5(img::Array{T,2}, spec) where T <: Real
           error(" $badspec is an unrecognized derivative option")
       end
     end
-   
+
     return tuple(G...)
 end
 
@@ -227,8 +227,8 @@ Returns:
 
  Examples:
    Just compute 1st derivatives in x and y
-   (gx, gy) = derivative7(img, ("x", "y"))  
-                                           
+   (gx, gy) = derivative7(img, ("x", "y"))
+
    Compute 2nd derivative in x, 1st derivative in y and 2nd derivative in y
    (gxx, gy, gyy) = derivative7(img, ("xx", "y", "yy"))
 ```
@@ -240,7 +240,7 @@ function derivative7(img::Array{T,2}, spec) where T <: Real
 
     # Convert to float if needed
     if isa(img[1,1], Integer)
-        fimg = float(img) 
+        fimg = float(img)
     else
         fimg = img
     end
@@ -249,11 +249,11 @@ function derivative7(img::Array{T,2}, spec) where T <: Real
     p  = [ 0.004711,  0.069321,  0.245410,  0.361117,  0.245410,  0.069321,  0.004711]
     d1 = [ 0.018708,  0.125376,  0.193091,  0.000000, -0.193091, -0.125376, -0.018708]
     d2 = [ 0.055336,  0.137778, -0.056554, -0.273118, -0.056554,  0.137778,  0.055336]
-    
+
     # Compute derivatives.  Note that in the 1st call below conv
     # function performs a 1D convolution down the columns using p then a 1D
     # convolution along the rows using d1. etc etc.
-    # Note that the result has to be trimmed becasue conv expands the 
+    # Note that the result has to be trimmed becasue conv expands the
     # result due to size of the filter
     G = Array{Array}(undef, length(spec))
 
@@ -273,7 +273,7 @@ function derivative7(img::Array{T,2}, spec) where T <: Real
           error(" $badspec is an unrecognized derivative option")
       end
     end
-    
+
     return tuple(G...)
 end
 
@@ -285,7 +285,7 @@ Non maxima suppression and thresholding for points generated by a feature
 or corner detector.
 ```
 Usage:   (r,c) = nonmaxsuppts(cimg; radius=1, thresh=0, N=Inf, subpix=false, img=[], fig=nothing)
-                                                            
+
 Argument:
            cimg   - corner strength image. ::Array{T,2}
 
@@ -303,7 +303,7 @@ Keyword Arguments:
              img  - Optional image data.  If an image is supplied the
                     detected corners are overlayed on this image. This can
                     be useful for parameter tuning. Default is [].
-              fig - Optional figure number to display image and corner points. 
+              fig - Optional figure number to display image and corner points.
                     If not specified a new figure is generated.
 
 Returns:
@@ -321,12 +321,13 @@ suppression radius of 2 and overlay the detected corners on the origin image.
 ```
 Note: An issue with integer valued images is that if there are multiple pixels
 all with the same value within distance 2*radius of each other then they will
-all be marked as local maxima. 
+all be marked as local maxima.
 
 See also: harris(), noble(), shi_tomasi(), hessianfeatures()
 """
-function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0, 
-                      N::Int=typemax(Int), subpixel::Bool=false, img=[], fig = nothing) where T <: Real
+function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
+                      N::Int=typemax(Int), subpixel::Bool=false, img=[], 
+                      disp=false, fig = nothing) where T <: Real
 
     #=
     September 2003  Original MATLAB version
@@ -339,51 +340,51 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
     end
 
     (rows,cols) = size(cimg)
-    
+
     # Extract local maxima by performing a grey scale morphological
     # dilation and then finding points in the corner strength image that
     # match the dilated image and are also greater than the threshold.
-#    mx = imdilate(cimg, circularstruct(radius)) 
+#    mx = imdilate(cimg, circularstruct(radius))
     mx = imdilate(cimg, "OCT", radius) # Much faster
 
-    # Make mask to exclude points within radius of the image boundary. 
+    # Make mask to exclude points within radius of the image boundary.
     bordermask = zeros(Bool, size(cimg))
     bordermask[radius+1:end-radius, radius+1:end-radius] .= true
-    
+
     # Find maxima, threshold, and apply bordermask
     cimgmx = (cimg.==mx) .& (cimg.>thresh) .& bordermask
 
-    
+
     # Get row, col coords of points.  The following is a clumsy replacement of
     # ind2sub.  It would be nice to make the function return an array of
     # CartesianIndicies however this would not allow maxima to be returned with
     # sub-pixel accuracy.
-#    (r, c) = ind2sub(size(cimgmx),findall(cimgmx)) 
+#    (r, c) = ind2sub(size(cimgmx),findall(cimgmx))
     ci = findall(cimgmx);  # CartesianIndices of maxima
     r = [ci[n][1] for n = 1:length(ci)]
     c = [ci[n][2] for n = 1:length(ci)]
 
     # Check if we want to limit the number of maxima
-    if isfinite(N)   
+    if isfinite(N)
         mxval = cimg[cimgmx]       # Get values of maxima and sort them.
         ind = sortperm(mxval,rev=true) # Permutation order of sorted values
-        
+
         r = r[ind]                 # Reorder r and c arrays
         c = c[ind]                 # to match.
-        
+
         if length(r) > N           # Grab the N strongest features.
             r = r[1:N]
             c = c[1:N]
         end
     end
-    
-    if isempty(r)     
+
+    if isempty(r)
         warn("No maxima above threshold found")
         r = zeros(Int,0)
         c = zeros(Int,0)
         return r, c
     end
-    
+
     # If requested compute local maxima to sub pixel accuracy.  We fit
     # a 1D quadratic vertically and horizontally to the image data
     # using the pixels above and below and left and right of the
@@ -407,29 +408,22 @@ function nonmaxsuppts(cimg::Array{T,2}; radius::Real=1, thresh::Real=0,
             # Solve for quadratic across columns
             cx = cimg[r[n],c[n]]
             ax = (cimg[r[n],c[n]-1] + cimg[r[n],c[n]+1])/2 - cx
-            bx = ax + cx - cimg[r[n],c[n]-1]    
+            bx = ax + cx - cimg[r[n],c[n]-1]
             if abs(ax) > eps()
                 csubpix[n] += -bx/(2*ax)  # Maxima of quadradic
             end
 
-        end      
+        end
     end
 
-    # If an image has been supplied display it and overlay corners.
-    if !isempty(img)  
-        PyPlot.figure(fig)
-        PyPlot.clf()
-        PyPlot.imshow(img)
-        PyPlot.set_cmap(PyPlot.ColorMap("gray"))
+    if disp
         if subpixel
-            PyPlot.plot(csubpix,rsubpix,"r+")
+            plot_nonmaxsuppts(fig, img, csubpix, rsubpix, cols, rows)
         else
-            PyPlot.plot(c,r,"r+")
+            plot_nonmaxsuppts(fig, img, c, r, cols, rows)
         end
-        PyPlot.axis([1,cols,rows,1])
-        PyPlot.title("Corners detected")
     end
-    
+
     if subpixel
         return rsubpix, csubpix
     else
@@ -445,7 +439,7 @@ erode1d - 1D morphological erosion of a signal.
 Usage:  ef = erode1d(f, k)
 
 Arguments:  f - 1D array of values to be eroded
-            k - Size of erosion kernel 
+            k - Size of erosion kernel
 
 Returns:   ef - Array of eroded values
 ```
@@ -482,7 +476,7 @@ dilate1d - 1D morphological dilation of a signal.
 Usage:  df = dilate1d(f, k)
 
 Arguments:  f - 1D array of values to be dilated
-            k - Size of dilation kernel 
+            k - Size of dilation kernel
 
 Returns:   df - Array of dilated values
 ```
@@ -505,17 +499,17 @@ end
 
 #---------------------------------------------------------------------
 """
-Unexported function that performs 1D erosion or dilation 
+Unexported function that performs 1D erosion or dilation
 
 ```
 Usage: df = erode_dilate1d(f, k::Integer, erode_dilate::String)
 
-Arguments:  
+Arguments:
             f - Array of values to be eroded or dilated
             k - Size/length of 1D structuring element
  erode_dilate - "erode" or "dilate"
 
-Returns:  
+Returns:
           fd - The eroded/dilated array.
 ```
 
@@ -523,9 +517,9 @@ See also: erode_dilate1d!()
 
 """
 function erode_dilate1d(f, k::Integer, erode_dilate::String)
-#function erode_dilate1d{T<:Real}(f::Array{T,1}, ki::Real, 
+#function erode_dilate1d{T<:Real}(f::Array{T,1}, ki::Real,
 #                           erode_dilate::String)
-    
+
     if uppercase(erode_dilate) == "ERODE"
         min_max = min
         gt_lt = >
@@ -537,10 +531,10 @@ function erode_dilate1d(f, k::Integer, erode_dilate::String)
     else
         error("Option must be 'erode' or 'dilate' ")
     end
-   
+
     df = zeros(eltype(f), size(f))
     Nf = length(f)
-    
+
     # Determine the 'radius' of structuring element.  If the size is odd then
     # there is a centre pixel and the 'radius' is symmetric.  If the size is
     # even then the centre pixel is taken to be the integer pixel location to
@@ -553,7 +547,7 @@ function erode_dilate1d(f, k::Integer, erode_dilate::String)
         rad1 = round(Int, k/2)
         rad2 = rad1-1
     end
-    
+
     # Pad ends of f with rad values of +-typemin/max and ensure overall length of padded
     # array is a multiple of k
     extrapad = round(Int, mod(Nf + rad1+rad2, k))
@@ -561,7 +555,7 @@ function erode_dilate1d(f, k::Integer, erode_dilate::String)
     g = [repeat([padval], rad1); f[:]; repeat([padval], rad2+extrapad)]
     h = copy(g)
     Npad = length(g)
-    
+
     # Generate the intermediate arrays
     rng2tok = 2:k           # Precompute ranges for a small gain in speed
     rngkm1to1 = (k-1):-1:1
@@ -574,14 +568,14 @@ function erode_dilate1d(f, k::Integer, erode_dilate::String)
                 g[o+n] = g[om1+n]
             end
         end
-        
+
         for n in rngkm1to1
             if gt_lt(h[o+n], h[op1+n])
                 h[o+n] = h[op1+n]
-            end            
-        end            
+            end
+        end
     end
-    
+
     # Combine the intermediate arrays g and h to obtain the dilation.  Note
     # that for even sized structuring elements there is a wasted min() or max()
     # operation every k steps.  However in the interests of keeping the code
@@ -634,11 +628,11 @@ function erode_dilate1d!_setup(f::Union{BitArray{1}, Array{T,1}}, k::Integer, er
 
     if uppercase(erode_dilate) == "ERODE"
         min_max = min
-        gt_lt = >        
+        gt_lt = >
         typemin_max = typemax
     elseif  uppercase(erode_dilate) == "DILATE"
         min_max = max
-        gt_lt = <        
+        gt_lt = <
         typemin_max = typemin
     else
         error("Option must be 'erode' or 'dilate' ")
@@ -709,27 +703,27 @@ function erode_dilate1d!(df, f, D::erode_dilate_data, N = D.N)
     for n in 1:D.Npad
         D.h[n] = D.g[n]
     end
-    
+
     # Generate the intermediate arrays
     rng2tok = 2:D.k           # Precompute ranges for a small gain in speed
     rngkm1to1 = (D.k-1):-1:1
-    
+
     for o in 0:D.k:(D.Npad-D.k)
         om1 = o - 1
         op1 = o + 1
         for n in rng2tok
             if D.gt_lt(D.g[o+n], D.g[om1+n])
                 D.g[o+n] = D.g[om1+n]
-            end            
+            end
         end
-        
+
         for n in rngkm1to1
             if D.gt_lt(D.h[o+n], D.h[op1+n])
                 D.h[o+n] = D.h[op1+n]
-            end                        
-        end            
+            end
+        end
     end
-    
+
     # Combine the intermediate arrays g and h to obtain the dilation.  Note
     # that for even sized structuring elements there is a wasted min() or max()
     # operation every k steps.  However in the interests of keeping the code
@@ -737,13 +731,13 @@ function erode_dilate1d!(df, f, D::erode_dilate_data, N = D.N)
     for n in (D.rad1+1):(D.rad1 + N)
         # If eroding we want the minimum of g[n+D.rad2] and h[n-D.rad1]
         # also, gt_lt is >().  Vice-versa for dilation
-        
+
         if D.gt_lt(D.g[n + D.rad2], D.h[n - D.rad1])
             df[n - D.rad1] = D.h[n - D.rad1]
         else
             df[n - D.rad1] = D.g[n + D.rad2]
         end
-        
+
     end
 
     return nothing
@@ -759,13 +753,13 @@ Arguments: img - Image to be dilated
         seType - String either "rectangle" or "octagon" specifying the
                  structuring element type. Can be shortened to "rect" or
                  "oct".
-        seSize - Structuring element size.  
+        seSize - Structuring element size.
                  If the seType is 'rect' seSize can be a 2 element vector
                  indicating the size of the rectangular structuring element
                  [rows, cols], or if it is a single value the structuring
                  element is square [seSize x seSize]
                  If seType is 'oct' then seSize is the nominal radius of
-                 the octagonal structuring element. 
+                 the octagonal structuring element.
 
 Returns:  dimg - The dilated image.
 ```
@@ -778,12 +772,12 @@ respect to the size of the image, irrespective of the structing element size.
 
 See also imerode(), erode1d(), dilate1d()
 """
-function imdilate(img::Array{T,2}, seType::String, 
+function imdilate(img::Array{T,2}, seType::String,
                   seSize::Union{Array{T2,1},T2}) where {T<:Real, T2<:Integer}
     imerode_dilate(img, seType, seSize, "DILATE")
 end
 
-function imdilate(img::BitArray{2}, seType::String, 
+function imdilate(img::BitArray{2}, seType::String,
                   seSize::Union{Array{T2,1},T2}) where T2 <: Integer
     imerode_dilate(img, seType, seSize, "DILATE")
 end
@@ -798,13 +792,13 @@ Arguments: img - Image to be eroded
         seType - String either "rectangle" or "octagon" specifying the
                  structuring element type. Can be shortened to "rect" or
                  "oct".
-        seSize - Structuring element size.  
+        seSize - Structuring element size.
                  If the seType is 'rect' seSize can be a 2 element vector
                  indicating the size of the rectangular structuring element
                  [rows, cols], or if it is a single value the structuring
                  element is square [seSize x seSize]
                  If seType is 'oct' then seSize is the nominal radius of
-                 the octagonal structuring element. 
+                 the octagonal structuring element.
 
 Returns:  eimg - The eroded image.
 ```
@@ -817,19 +811,19 @@ respect to the size of the image, irrespective of the structing element size.
 
 See also imdilate(), erode1d(), dilate1d()
 """
-function imerode(img::Array{T,2}, seType::String, 
+function imerode(img::Array{T,2}, seType::String,
                  seSize::Union{Array{T2,1},T2}) where {T<:Real, T2<:Integer}
     imerode_dilate(img, seType, seSize, "ERODE")
 end
 
-function imerode(img::BitArray{2}, seType::String, 
+function imerode(img::BitArray{2}, seType::String,
                  seSize::Union{Array{T2,1},T2}) where T2<:Integer
     imerode_dilate(img, seType, seSize, "ERODE")
 end
 
 #------------------------------------------------------------------------
 
-# Unexported function that performs erosion or dilation 
+# Unexported function that performs erosion or dilation
 
 #=
 Reference: Marcel van Herk, "A fast algorithm for local minimum and maximum
@@ -854,11 +848,11 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
     end
 
     (rows,cols) = size(img)
-    
-    # Rectangular structuring element    
+
+    # Rectangular structuring element
     if uppercase(seType[1:3]) == "REC"
         if length(seSize) == 1
-            k = round.(Int, [seSize, seSize]) 
+            k = round.(Int, [seSize, seSize])
         else
             k = round.(Int, seSize)
         end
@@ -867,11 +861,11 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
 #=
         # Old code which was memory intensive
         for c = 1:cols
-            dimg[:,c] = erode_dilate1d(img[:,c], k[1], erode_dilate)            
+            dimg[:,c] = erode_dilate1d(img[:,c], k[1], erode_dilate)
         end
-        
+
         for r = 1:rows
-            dimg[r,:] = erode_dilate1d(dimg[r,:], k[2], erode_dilate)            
+            dimg[r,:] = erode_dilate1d(dimg[r,:], k[2], erode_dilate)
         end
 
 =#
@@ -880,7 +874,7 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         # Operate on columns
         data = erode_dilate1d!_setup(img[:,1], k[1], erode_dilate)
         for c in 1:cols
-            erode_dilate1d!(view(dimg,:,c), img[:,c], data)            
+            erode_dilate1d!(view(dimg,:,c), img[:,c], data)
         end
 
         # Process rows of result
@@ -889,10 +883,10 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
             erode_dilate1d!(view(dimg,r,:), dimg[r,:], data)
         end
 
-        
-    # Octagonal structuring element        
+
+    # Octagonal structuring element
     elseif uppercase(seType[1:3]) == "OCT"
-     
+
         # The size of the linear structuring element for the
         # vertical and horizontal dilations matches the desired radius.
         k = round(Int, seSize)
@@ -900,18 +894,18 @@ function imerode_dilate(img, seType::String, seSize, erode_dilate::String)
         # diagonal direction is 1/sqrt(2) of k
         dk = round(Int, k/sqrt(2))
         # Ensure the diagonal structuring element size is odd so that there is a centre
-        # pixel and the resulting octagon is symmetric 
+        # pixel and the resulting octagon is symmetric
         if iseven(dk); dk = dk+1; end
-        
+
         # First do 2D square dilation
         dimg = imerode_dilate(img, "rect", k, erode_dilate)
-        
+
         # Extract diagonal lines of pixels from dimg and perform 1d dilation on
         # them
 
 dirn = (1,2,3,4)
 
-if 1 in dirn        
+if 1 in dirn
         # NE lines, emanating from left edge of image
         # Max no of elements is cols
         data = erode_dilate1d!_setup(dimg[1,:], dk, erode_dilate)
@@ -924,18 +918,18 @@ if 1 in dirn
             for c = 1:cmax
                 l[c] = dimg[r-c+1, c]
             end
-            
+
             erode_dilate1d!(dl, l, data, cmax)
-            
+
             for c = 1:cmax
                 dimg[r-c+1,c] = dl[c]
-            end        
+            end
         end
 end
-if 2 in dirn        
+if 2 in dirn
         # NE lines, emanating from bottom of image, max no of elements is rows
         data = erode_dilate1d!_setup(dimg[:,1], dk, erode_dilate)
-        l = dimg[:,1] 
+        l = dimg[:,1]
         dl = copy(l)
 
         for c = 2:cols#-1
@@ -953,30 +947,30 @@ if 2 in dirn
             end
         end
 end
-if 3 in dirn        
+if 3 in dirn
         # SE lines, emanating from left edge of image
         data = erode_dilate1d!_setup(dimg[1,:], dk, erode_dilate)
-        l = dimg[1,:] 
+        l = dimg[1,:]
         dl = copy(l)
-        
+
         for r = 1:rows
             cmax = min(rows-r+1,cols)
 
             for c = 1:cmax
                 l[c] = dimg[r+c-1, c]
             end
-            
+
             erode_dilate1d!(dl, l, data, cmax)
-            
+
             for c = 1:cmax
                 dimg[r+c-1,c] = dl[c]
-            end        
+            end
         end
 end
-if 4 in dirn        
+if 4 in dirn
         # SE lines, emanating from top of image
         data = erode_dilate1d!_setup(dimg[:,1], dk, erode_dilate)
-        l = dimg[:,1] 
+        l = dimg[:,1]
         dl = copy(l)
 
         for c = 2:cols
@@ -984,18 +978,18 @@ if 4 in dirn
             for r = 1:rmax
                 l[r] = dimg[r,c+r-1]
             end
-            
+
             erode_dilate1d!(dl, l, data, rmax)
 
             for r = 1:rmax
                 dimg[r,c+r-1] = dl[r]
-            end        
+            end
         end
-end        
+end
     else
         error("Structure element type must be 'rect' or 'oct' ")
     end
-    
+
     return dimg
 end
 
@@ -1057,7 +1051,7 @@ end
 
 function imerode_dilate(img, se, erode_dilate::String)
 
- 
+
     if uppercase(erode_dilate) == "ERODE"
         min_max = minimum
     elseif  uppercase(erode_dilate) == "DILATE"
@@ -1075,7 +1069,7 @@ function imerode_dilate(img, se, erode_dilate::String)
     for r = 1:rows-sr, c = 1:cols-sc
         dimg[r+roff, c+coff] = min_max(img[r:r+sr-1,  c:c+sc-1].*se)
     end
-    
+
     return dimg
 end
 
@@ -1113,11 +1107,11 @@ to smimg
 
 """
 function gaussfilt(img::Array, sigma::Real)
- 
+
     if sigma < eps()
         return copy(img)   # ?? Return img or copy(img) ?
     end
-    
+
     h = ImageFiltering.Kernel.gaussian(sigma)
 #    h = Images.KernelFactors.IIRGaussian(sigma)
 
@@ -1131,9 +1125,9 @@ function gaussfilt(img::Array, sigma::Real)
         for n = 1:nchan
             smimg[:,:,n] = Images.imfilter(img[:,:,n],h)
         end
-   
+
         return smimg
-    end 
+    end
 end
 
 
@@ -1146,7 +1140,7 @@ Usage:  (fimg, prop) = floatyx(img)
 Argument:  img - ::ImageMeta{T,2}
 
 Returns:  fimg - ::Array{Float64,2} in "y" "x" spatial order.
-          prop - A copy of the properties dictionary of the input image 
+          prop - A copy of the properties dictionary of the input image
                  with "spatialorder" adjusted (if this was needed).
 ```
 Most image processing functions expect 2D arrays in (row, column)
@@ -1182,7 +1176,7 @@ imgnormalise/imgnormalize - Normalises image values to 0-1, or to desired mean a
 Usage 1:      nimg = imgnormalise(img)
 ```
 Offsets and rescales image so that the minimum value is 0
-and the maximum value is 1.  
+and the maximum value is 1.
 
 ```
 Usage 2:      nimg = imgnormalise(img, reqmean, reqvar)
@@ -1192,7 +1186,7 @@ Arguments:  img     - A grey-level input image.
             reqvar  - The required variance of the image.
 ```
 Offsets and rescales image so that nimg has mean reqmean and variance
-reqvar.  
+reqvar.
 """
 function imgnormalise(img::Array) # Normalise 0 - 1
     n = img .- minimum(img)
@@ -1213,7 +1207,7 @@ imgnormalize - Normalizes image values to 0-1, or to desired mean and variance
 Usage 1:      nimg = imgnormalize(img)
 ```
 Offsets and rescales image so that the minimum value is 0
-and the maximum value is 1.  
+and the maximum value is 1.
 ```
 Usage 2:      nimg = imgnormalize(img, reqmean, reqvar)
 
@@ -1222,9 +1216,9 @@ Arguments:  img     - A grey-level input image.
             reqvar  - The required variance of the image.
 ```
 Offsets and rescales image so that nimg has mean reqmean and variance
-reqvar.  
+reqvar.
 """
-function imgnormalize(img::Array) 
+function imgnormalize(img::Array)
     return imgnormalise(img)
 end
 
@@ -1246,7 +1240,7 @@ have the overall effect of darkening the rest of the image after
 rescaling.
 
 ```
-Usage: 
+Usage:
 1)   newimg = histtruncate(img, lHistCut, uHistCut)
 2)   newimg = histtruncate(img, HistCut)
 
@@ -1271,23 +1265,23 @@ Returns:
 See also: imgnormalise()
 """
 function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
-    
+
     if lHistCut < 0 || lHistCut > 100 || uHistCut < 0 || uHistCut > 100
 	error("Histogram truncation values must be between 0 and 100")
     end
-    
+
     if ndims(img) > 2
 	error("histtruncate only defined for grey scale images")
     end
 
-    newimg = copy(img)    
+    newimg = copy(img)
     sortv = sort(newimg[:])   # Generate a sorted array of pixel values.
 
     # Any NaN values will end up at the end of the sorted list. We
     # need to ignore these.
 #    N = sum(.!isnan.(sortv))  # Number of non NaN values. v0.6
     N = sum(broadcast(!,isnan.(sortv)))  # compatibity for v0.5 and v0.6
-    
+
     # Compute indicies corresponding to specified upper and lower fractions
     # of the histogram.
     lind = floor(Int, 1 + N*lHistCut/100)
@@ -1299,7 +1293,7 @@ function  histtruncate(img::Array, lHistCut::Real, uHistCut::Real)
     # Adjust image
     newimg[newimg .< low_val] .= low_val
     newimg[newimg .> high_val] .= high_val
-    
+
     return newimg
 end
 
@@ -1327,7 +1321,7 @@ too dissimilar.
 This is a simple-minded N^2 comparison.
 
 ```
-Usage: (m1, m2, p1ind, p2ind, cormat) = 
+Usage: (m1, m2, p1ind, p2ind, cormat) =
                 matchbycorrelation(img1, p1, img2, p2, w, dmax)
 
 Arguments:
@@ -1346,7 +1340,7 @@ Arguments:
                    points.  Used to improve speed when there is little
                    disparity between images. Even setting it to a generous
                    value of 1/4 of the image size gives a useful
-                   speedup. If this parameter is omitted it defaults to Inf. 
+                   speedup. If this parameter is omitted it defaults to Inf.
 
 Returns:
         m1, m2   - Coordinates of points selected from p1 and p2
@@ -1361,7 +1355,7 @@ Returns:
 This function is slow as mud! Needs some attention.
 """
 function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
-    # Probably needs devectorisation to improve speed 
+    # Probably needs devectorisation to improve speed
     #=
     February 2004    - Original version
     May      2004    - Speed improvements + constraint on search radius for
@@ -1382,22 +1376,22 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     #
     # This code assumes img1 and img2 have zero mean.  This speeds the
     # calculation of the normalised correlation measure.
-    
+
     function correlationmatrix(img1, p1, img2, p2, w, dmax)
 
         if iseven(w)
             error("Window size should be odd")
         end
-        
+
         (rows1, npts1) = size(p1)
         (rows2, npts2) = size(p2)
         if rows1 != 2 || rows2 != 2
             error("Feature points must be specified in 2xN arrays")
         end
-        
+
         # Initialize correlation matrix values to -infinty
         cormat = -Inf*ones(npts1,npts2)
-        
+
         (im1rows, im1cols) = size(img1)
         (im2rows, im2cols) = size(img2)
 
@@ -1407,7 +1401,7 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
         # and correlate with a window corresponding to every feature point in
         # the other image.  Any feature point less than distance 'r' from the
         # boundary of an image is not considered.
-        
+
         # Find indices of points that are distance 'r' or greater from
         # boundary on image1 and image2;
         n1ind = find((p1[1,:].>r) .& (p1[1,:].<im1rows+1-r) .& (p1[2,:].>r) .& (p1[2,:].<im1cols+1-r))
@@ -1418,16 +1412,16 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
 
         dists2 = zeros(length(n2ind))
 
-        for n1 = n1ind            
-            # Generate window in 1st image   	
+        for n1 = n1ind
+            # Generate window in 1st image
             w1 = vec(img1[p1[1,n1]-r:p1[1,n1]+r, p1[2,n1]-r:p1[2,n1]+r])
             # Pre-normalise w1 to a unit vector.
             w1 = w1/sqrt(w1'*w1)
-            
+
             # Identify the indices of points in p2 that we need to consider.
             if dmax == Inf
 	        n2indmod = n2ind # We have to consider all of n2ind
-                
+
             else     # Compute distances from p1[:,n1] to all available p2.
                 ind = 0
                 for i = n2ind
@@ -1436,10 +1430,10 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
                 end
 	        n2indmod = n2ind[findall(dists2 .< dmax^2)]
             end
-            
+
             # Calculate normalised correlation measure.  Note this gives
             # significantly better matches than the unnormalised one.
-            for n2 = n2indmod 
+            for n2 = n2indmod
                 # Generate window in 2nd image
                 w2 = vec(img2[p2[1,n2]-r:p2[1,n2]+r, p2[2,n2]-r:p2[2,n2]+r])
                 cormat[n1,n2] = (w1'*w2/sqrt(w2'*w2))[1]  # [1] to create scalar
@@ -1450,10 +1444,10 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     end
     #-----------------------------------------------------------------
     # The main function
-    
+
     img1 = float(img1i)
     img2 = float(img2i)
-    
+
     # Subtract image smoothed with an Gaussian filter with sigma = w/3 from
     # each of the images.  This attempts to compensate for brightness
     # differences in each image.  Doing it now allows faster correlation
@@ -1461,7 +1455,7 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     sigma = w/3   # A guess as to what might be appropriate...
     img1 .-= gaussfilt(img1, sigma)
     img2 .-= gaussfilt(img2, sigma)
-    
+
     # Generate correlation matrix
     cormat = correlationmatrix(img1, p1, img2, p2, w, dmax)
     (corrows,corcols) = size(cormat)
@@ -1470,15 +1464,15 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
     mp2forp1 = zeros(corrows)
     colp2forp1 = zeros(Int,corrows)
     for r = 1:corrows
-        (mp2forp1[r], colp2forp1[r]) = findmax(cormat[r,:])  
+        (mp2forp1[r], colp2forp1[r]) = findmax(cormat[r,:])
     end
-    # Find max down cols give strongest match in p1 for each p2 
+    # Find max down cols give strongest match in p1 for each p2
     mp1forp2 = zeros(corcols)
     rowp1forp2 = zeros(Int,corcols)
     for c = 1:corcols
         (mp1forp2[c], rowp1forp2[c]) = findmax(cormat[:,c])
     end
-    
+
     # Now find matches that were consistent in both directions
     p1ind = zeros(Int, size(p1,2))  # Arrays for storing matched indices
     p2ind = zeros(Int, size(p2,2))
@@ -1490,17 +1484,17 @@ function matchbycorrelation(img1i, p1, img2i, p2, w, dmax=Inf)
             p2ind[indcount] = colp2forp1[n]
         end
     end
-    
+
     # Trim arrays of indices of matched points
     p1ind = p1ind[1:indcount]
     p2ind = p2ind[1:indcount]
-    
+
     # Extract matched points from original arrays
     m1 = p1[:,p1ind]
     m2 = p2[:,p2ind]
-    
+
     return (m1, m2, p1ind, p2ind, cormat)
-    
+
 end # of matchbycorrelation
 
 #----------------------------------------------------------------------
@@ -1543,15 +1537,15 @@ function grey2census(img::Array{T,2}; window::Vector{T2}=[7,9], medianref = true
     if nBits > 64
         error("Window must not have more than 64 elements")
     end
-    
+
     if iseven(window[1]) || iseven(window[2])
         error("Window sizes must be odd")
     end
-    
+
     rrad = round(Int,(window[1]-1)/2)
     crad = round(Int,(window[2]-1)/2)
 
-    
+
     # Define the reference values.  If we use the median of the window we
     # apply a median filter to obtain the reference values, else use the
     # original image
@@ -1560,10 +1554,10 @@ function grey2census(img::Array{T,2}; window::Vector{T2}=[7,9], medianref = true
     else
         imref = copy(img)
     end
-    
+
     # Build table of values corresponding to each bit
     bitval = UInt64[2^(b-1) for b=1:nBits]
-    
+
     cimg = zeros(UInt64, rows, cols)
 
     # Build meshgrid of coordinates corresponding to all the offsets/bits
@@ -1571,19 +1565,19 @@ function grey2census(img::Array{T,2}; window::Vector{T2}=[7,9], medianref = true
     roff = [r for r = -rrad:rrad, c = -crad:crad]
 
     for n = 1:nBits
-        cimg[rrad+1:rows-rrad, crad+1:cols-crad] = 
-        cimg[rrad+1:rows-rrad, crad+1:cols-crad] + 
+        cimg[rrad+1:rows-rrad, crad+1:cols-crad] =
+        cimg[rrad+1:rows-rrad, crad+1:cols-crad] +
 #=
         bitval[n]*(
-                img[rrad+1+roff[n]:rows-rrad+roff[n], crad+1+coff[n]:cols-crad+coff[n]] .< 
+                img[rrad+1+roff[n]:rows-rrad+roff[n], crad+1+coff[n]:cols-crad+coff[n]] .<
                 img[rrad+1:rows-rrad, crad+1:cols-crad])
 =#
         bitval[n]*(
-                view(img,rrad+1+roff[n]:rows-rrad+roff[n], crad+1+coff[n]:cols-crad+coff[n]) .< 
+                view(img,rrad+1+roff[n]:rows-rrad+roff[n], crad+1+coff[n]:cols-crad+coff[n]) .<
                 view(img,rrad+1:rows-rrad, crad+1:cols-crad))
 
     end
-    
+
     return cimg
 end
 
@@ -1595,13 +1589,13 @@ briefcoords - Compute BRIEF descriptor sampling coordinates within a patch.
 ```
 Usage:  rc = briefcoords(S, nPairs, UorG; disp=false)
 
-Arguments:  S - An odd integer specifying the patch size (S x S).  
+Arguments:  S - An odd integer specifying the patch size (S x S).
        nPairs - Number of point pairs required.  Typically this is a power
                 of 2, 128, 256, 512 for packing the descriptor values into
                 a bit string.
          UorG - Character 'U' or 'G' indicating whether a uniform or
                 gaussian distribution of point pairings is formed within
-                the patch.  
+                the patch.
          disp - Optional boolean flag indicating whether a plot of the point
                 pairings should be displayed.
 
@@ -1610,7 +1604,7 @@ Returns:   rc - [2 x 2*nPairs] array of integer (row; col) coordinates
                 successive pair of columns is intended to provide a pair of
                 points for comparing image grey values against each other
                 for forming a BRIEF descriptor of a patch about some
-                central feature location. 
+                central feature location.
 ```
 
 Use of the Gaussian distribution of point pairings corresponds to the approach
@@ -1631,7 +1625,7 @@ function briefcoords(S, nPairs, UorG; disp=false)
     # around the centre pixel, rather than a square one.  This will make
     # the size and localisation invariant to orientation of the underlying
     # pixel data.
-    
+
     if iseven(S)
         error("Patch size must be an odd integer")
     end
@@ -1643,49 +1637,27 @@ function briefcoords(S, nPairs, UorG; disp=false)
     R = round(Int, (S-1)/2)    # 'Radius' of patch
 
     # Option that generates a uniformly distributed pairings of
-    # coordinates within the patch.    
+    # coordinates within the patch.
     if uppercase(UorG[1]) == 'U'
         rc = rand(rng, -R:R, (2, 2*nPairs))
-        
+
     # Option that generates a set of normally distributed points within the
     # patch and forms pairings between them as suggested by the orginal paper.
     elseif uppercase(UorG[1]) == 'G'
         sigma = S/5  # Standard deviation suggested by Calonder et al.
         rc = round(Int, sigma * randn(rng, 2, 2*nPairs))
-        
+
         # Clamp coordinates to patch bounds
         rc[rc .> R] = R
         rc[rc .< -R] = -R
-        
+
     else
         error("Option must be 'U'niform or 'G'aussian")
     end
 
-    # Diagnostic display
+    # # Diagnostic display
     if disp
-        figure(200); clf
-        R = (S-1)/2 + 1
-        axis([-R, R, -R, R])
-
-        for n = 1:nPairs
-            plot(rc[2, 2*n-1:2*n], rc[1, 2*n-1:2*n], color = rand(3), 
-                 linewidth = 3)
-            hold(true)
-        end
-
-        axis("equal")
-        hold(false)
-
-        # Determine distances between pairs and display histogram
-        sdist = zeros(nPairs)
-        for n = 1:nPairs
-            sdist[n] = norm(rc[:,2*n-1] - rc[:,2*n])
-        end
-        
-        (e, counts) = hist(sdist, 0:.5:S)
-        figure(30); clf()
-        PyPlot.bar(left=e[1:end-1], height = counts, width=e[2]-e[1])
-        title("Histogram of distances between pairs")
+        plot_briefcoords(S, nPairs, rc)
     end
 
     return rc
@@ -1734,21 +1706,21 @@ function grey2lbp(img::Array, rc::Array, window::Vector)
 
     (rows,cols) = size(img)
     lbpim = zeros(UInt64, rows, cols)
-    
+
     nBits = div(size(rc,2),2)       # No of coordiante pairs / No of bits
-    
+
     if nBits > 64
         error("Array 'rc' must not have more than 128 columns")
     end
-    
+
     if iseven(window[1]) || iseven(window[2])
         error("Window sizes must be odd")
     end
-    
+
     rrad = div((window[1]-1),2)
     crad = div((window[2]-1),2)
 
-    # Build table of values corresponding to each bit. 
+    # Build table of values corresponding to each bit.
     bitval = [UInt64(1) << n for n = 0:63]
 
     # Perform encoding
@@ -1761,10 +1733,10 @@ function grey2lbp(img::Array, rc::Array, window::Vector)
         for c = crad+1:cols-crad
             c1 = c+rc[2,twob]
             c2 = c+rc[2,twobm1]
-            
+
             for r = rrad+1:rows-rrad
-                if img[r+roff1, c1] < img[r+roff2, c2] 
-                    lbpim[r,c] |= bitval[b]  
+                if img[r+roff1, c1] < img[r+roff2, c2]
+                    lbpim[r,c] |= bitval[b]
                 end
             end
         end
@@ -1782,7 +1754,7 @@ grey2lbp! - Convert image grey scale values to local binary pattern.
 Usage:   grey2lbp!(lbpim, img, rc, window)
 
 Arguments:
-        lbpim - Buffer for Local Binary Pattern encoded image. 
+        lbpim - Buffer for Local Binary Pattern encoded image.
                 Must be of type Array{UInt64,2}.
           img - greyscale image to be processed
            rc - [2 x 2*nPairs] array of integer (row;col) coordinates.
@@ -1797,7 +1769,7 @@ Arguments:
                 should match the range of values in rc and be odd.
 
 Returns:  nothing
-        
+
 ```
 
 Each pixel is encoded with a bit pattern formed by comparing pairs of pixels.
@@ -1819,21 +1791,21 @@ function grey2lbp!(lbpim::Array{UInt64,2}, img::Array, rc::Array, window::Vector
 
     (rows,cols) = size(img)
     fill!(lbpim, zero(UInt64))
-    
+
     nBits = div(size(rc,2),2)       # No of coordiante pairs / No of bits
-    
+
     if nBits > 64
         error("Array 'rc' must not have more than 128 columns")
     end
-    
+
     if iseven(window[1]) || iseven(window[2])
         error("Window sizes must be odd")
     end
-    
+
     rrad = div((window[1]-1),2)
     crad = div((window[2]-1),2)
 
-    # Build table of values corresponding to each bit. 
+    # Build table of values corresponding to each bit.
     bitval = [UInt64(1) << n for n = 0:63]
 
     rrange = rrad+1:rows-rrad
@@ -1853,10 +1825,10 @@ function grey2lbp!(lbpim::Array{UInt64,2}, img::Array, rc::Array, window::Vector
             for c = crange
                 c1 = c+rc[2,twob]
                 c2 = c+rc[2,twobm1]
-                
+
                 # This loop is the killer for time, what can one do?
                 for r = rrange
-                    if img[r+roff1, c1] < img[r+roff2, c2] 
+                    if img[r+roff1, c1] < img[r+roff2, c2]
                         lbpim[r,c] |= bitval[b]
                     end
                 end
@@ -1867,17 +1839,17 @@ function grey2lbp!(lbpim::Array{UInt64,2}, img::Array, rc::Array, window::Vector
     return nothing
 end
 
-#------------------------------------------------------------------    
+#------------------------------------------------------------------
 """
 medfilt2 - Convenience wrapper for median filtering.
 
 ```
 Usage:  medimg = medfilt2(img, h::Int, w::Int)
-        medimg = medfilt2(img, h::Int)   
+        medimg = medfilt2(img, h::Int)
         medimg = medfilt2(img, hw::Tuple)
 
 Arguments:   img - Image to be processed, Array{T,2}
-            h, w - Height and width of rectangular window over which the 
+            h, w - Height and width of rectangular window over which the
                    median is to be computed. Values must be odd.
                    h and w may be specified as a size tuple, or as a
                    single value in which case w and h are made equal.
@@ -1916,7 +1888,7 @@ Usage:  stdimg = stdfilt2(img, h::Int, w::Int)
         stdimg = stdfilt2(img, hw::Tuple)
 
 Arguments:   img - Image to be processed, Array{T,2}
-            h, w - Height and width of rectangular window over which the 
+            h, w - Height and width of rectangular window over which the
                    standard deviation is to be computed. Values must be odd.
                    h and w may be specified as a size tuple, or as a
                    single value in which case w and h are made equal.
@@ -1931,7 +1903,7 @@ function stdfilt2(img::Array, h::Int, w::Int)
     if ndims(img) != 2
         error("Image must be 2D")
     end
-    
+
     # Get mean image
     kern = Images.centered(Images.imaverage((h,w)))
     meanimg::Array{Float64,2} = Images.imfilter(img, kern)
@@ -1974,7 +1946,7 @@ function keypause()
     elseif a[1] == 'x'
         error("Exiting")  # Should be a nice way to do this
     else
-        return 
+        return
     end
 end
 

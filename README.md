@@ -23,6 +23,13 @@ pkg> add ImageProjectiveGeometry
 help?> ImageProjectiveGeometry  # Lists a summary of the package functions 
 ```
 
+On Julia versions >=1.9, the `PyPlot` package is not added automatically anymore, but used as a weak dependency. To get the plotting functionality back, import `PyPlot` together with `ImageProjectiveGeometry` like this:
+
+```Julia
+using PyPlot
+using ImageProjectiveGeometry
+```
+
 ## Summary
 
 This Image Projective Geometry package is intended as a starting point for the development of a library of projective geometry functions for computer vision in Julia.
