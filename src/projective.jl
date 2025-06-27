@@ -160,7 +160,7 @@ Returns:
 See also: Camera(), camstruct2projmatrix()
 
 """
-function cameraproject(P::Array, pt::Array) # Projection matrix version
+function cameraproject(P::Matrix{T}, pt::Array) where T # Projection matrix version
 
     if size(P) != (3,4)
         error("Projection matrix must be 3x4")
@@ -171,7 +171,7 @@ function cameraproject(P::Array, pt::Array) # Projection matrix version
     end
 
     nPts = size(pt,2)
-    xy = zeros(2,nPts)
+    xy = zeros(T, 2,nPts)
 
     for i in 1:nPts
         s = P[3,1]*pt[1,i] + P[3,2]*pt[2,i] + P[3,3]*pt[3,i] + P[3,4]
@@ -1899,7 +1899,7 @@ function solvestereopt(xy::Array{T1,2}, P::Array{Array{T2,2}}; reprojecterror=fa
     @assert N >= 2  "Must have at least 2 camera views"
 
     # Build eqn of the form A*pt = 0
-    A = zeros(2*N, 4)
+    A = zeros(T1, 2*N, 4)
     for n = 1:N
 	A[2*n-1,:] = xy[1,n]*P[n][3,:] .- P[n][1,:]
 	A[2*n  ,:] = xy[2,n]*P[n][3,:] .- P[n][2,:]
